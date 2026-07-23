@@ -6,7 +6,7 @@ This is the clean object the reasoning layer consumes. Design goals:
 - Numbers + Garmin's own feedback phrases (e.g. HRV_BALANCED_8), which are
   human-meaningful and let the LLM interpret trends without a fragile int map.
 """
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 
@@ -89,7 +89,59 @@ def summarize_training(ts: dict) -> dict:
     }
 
 
-def summarize_activities(activities: list, limit: int = 7) -> list:
+def summarize_garmin_readiness(readiness: Any) -> dict:
+    """Garmin's OWN coaching verdict for the day — we reconcile our rec against it.
+
+    get_training_readiness returns a list (can be several snapshots/day); the
+    first entry is the most recent.
+    """
+    entries = readiness or []
+    if not isinstance(entries, list) or not entries:
+        return {}
+    r = entries[0]
+    return {
+        "score": r.get("score"),
+        "level": r.get("level"),
+        "feedback": r.get("feedbackShort"),
+        "recovery_time_min": r.get("recoveryTime"),
+        "acute_load": r.get("acuteLoad"),
+        "acwr_feedback": r.get("acwrFactorFeedback"),
+        "factors": {
+            "sleep_score": r.get("sleepScoreFactorFeedback"),
+            "sleep_history": r.get("sleepHistoryFactorFeedback"),
+            "hrv": r.get("hrvFactorFeedback"),
+            "stress_history": r.get("stressHistoryFactorFeedback"),
+            "recovery_time": r.get("recoveryTimeFactorFeedback"),
+        },
+    }
+
+
+def build_readiness_trend(client, target_date: str, days: int = 7) -> list:
+    """Compact N-day series so the model can see stacking trends, not one snapshot.
+
+    Sourced entirely from get_training_readiness (one call/day), which already
+    bundles readiness score + sleep score + recovery time + acute load + HRV.
+    """
+    d0 = date.fromisoformat(target_date)
+    trend = []
+    for i in range(days - 1, -1, -1):
+        di = (d0 - timedelta(days=i)).isoformat()
+        entries = client.get_training_readiness(di) or []
+        r = entries[0] if isinstance(entries, list) and entries else {}
+        trend.append(
+            {
+                "date": di,
+                "readiness": r.get("score"),
+                "sleep_score": r.get("sleepScore"),
+                "recovery_time_min": r.get("recoveryTime"),
+                "acute_load": r.get("acuteLoad"),
+                "hrv_weekly_avg": r.get("hrvWeeklyAverage"),
+            }
+        )
+    return trend
+
+
+def summarize_activities(activities: list, limit: int = 14) -> list:
     out = []
     for a in (activities or [])[:limit]:
         out.append(
@@ -114,10 +166,13 @@ def build_summary(client, target_date: str | None = None) -> dict:
     sleep = client.get_sleep_data(d) or {}
     hrv = client.get_hrv_data(d) or {}
     training = client.get_training_status(d) or {}
-    activities = client.get_activities(0, 7) or []
+    activities = client.get_activities(0, 14) or []
+    garmin_readiness = client.get_training_readiness(d)
 
     return {
         "date": d,
+        "garmin_readiness": summarize_garmin_readiness(garmin_readiness),
+        "readiness_trend_7d": build_readiness_trend(client, d, 7),
         "sleep": summarize_sleep(sleep),
         "hrv": summarize_hrv(hrv),
         "resting_hr": {

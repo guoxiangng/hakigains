@@ -44,7 +44,18 @@ How to reason:
   from recent activity), in service of the athlete's yoga goal — but not as an
   automatic default when an easy aerobic session would serve their loading better.
 - Favour variety; avoid piling onto a modality that already dominates recent days.
+  Use `modality_counts` (normalized run/bike/swim/strength/etc., which already
+  merges indoor+outdoor variants) to judge balance and what's been neglected.
 - Give a REAL, do-able session (modality, intensity, rough duration/structure).
+- Expanding the repertoire (HIGH BAR, occasional): the athlete's usual sessions
+  are their default, but their facilities enable more than their habitual list
+  (a full gym includes incline treadmill, stair machine, step-ups/step-downs,
+  sled, etc.). You MAY suggest a session outside their usual pattern — but ONLY
+  when it clearly serves a STATED GOAL better than their usual options (e.g. a
+  mountaineering / knee-connective-tissue goal → weighted incline walking, stair
+  work, or eccentric step-downs). When you do, flag it plainly as a "worth trying"
+  option tied to the specific goal, and don't do it more than occasionally. If no
+  novel option clears this bar, stick to established modalities.
 - {INTENSITY_GUIDANCE.get(intensity_bias, INTENSITY_GUIDANCE['balanced'])}"""
 
 

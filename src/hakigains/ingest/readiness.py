@@ -6,8 +6,37 @@ This is the clean object the reasoning layer consumes. Design goals:
 - Numbers + Garmin's own feedback phrases (e.g. HRV_BALANCED_8), which are
   human-meaningful and let the LLM interpret trends without a fragile int map.
 """
+from collections import Counter
 from datetime import date, timedelta
 from typing import Any
+
+# Garmin's typeKey is already a categorisation, but it splits indoor/outdoor
+# variants (running vs treadmill_running, cycling vs indoor_cycling). We roll
+# those into coarse MODALITY buckets so the coach reasons over "run"/"bike"/etc.
+# rather than fragmented keys. Unmapped keys pass through unchanged.
+MODALITY_MAP = {
+    "running": "run", "treadmill_running": "run", "trail_running": "run",
+    "indoor_running": "run", "track_running": "run", "obstacle_run": "run",
+    "cycling": "bike", "indoor_cycling": "bike", "road_biking": "bike",
+    "mountain_biking": "bike", "gravel_cycling": "bike", "virtual_ride": "bike",
+    "cyclocross": "bike",
+    "lap_swimming": "swim", "open_water_swimming": "swim", "pool_swim": "swim",
+    "strength_training": "strength",
+    "yoga": "yoga", "pilates": "pilates",
+    "floor_climbing": "climb", "indoor_climbing": "climb", "bouldering": "climb",
+    "rock_climbing": "climb", "mountaineering": "climb",
+    "hiking": "hike",
+    "stair_climbing": "stairs",
+    "elliptical": "cardio", "indoor_cardio": "cardio", "cardio": "cardio",
+    "walking": "walk", "casual_walking": "walk", "speed_walking": "walk",
+    "breathwork": "mobility", "stretching": "mobility", "mobility": "mobility",
+}
+
+
+def normalize_modality(type_key: Any) -> str | None:
+    if not type_key:
+        return None
+    return MODALITY_MAP.get(type_key, type_key)
 
 
 def _min(seconds: Any) -> float | None:
@@ -148,6 +177,7 @@ def summarize_activities(activities: list, limit: int = 14) -> list:
             {
                 "name": a.get("activityName"),
                 "type": (a.get("activityType") or {}).get("typeKey"),
+                "modality": normalize_modality((a.get("activityType") or {}).get("typeKey")),
                 "start": a.get("startTimeLocal"),
                 "dur_min": _min(a.get("duration")),
                 "load": round(a["activityTrainingLoad"])
@@ -156,6 +186,12 @@ def summarize_activities(activities: list, limit: int = 14) -> list:
             }
         )
     return out
+
+
+def modality_counts(recent: list) -> dict:
+    """Count sessions per normalized modality over the window (most frequent first)."""
+    counts = Counter(a["modality"] for a in recent if a.get("modality"))
+    return dict(counts.most_common())
 
 
 def build_summary(
@@ -173,6 +209,7 @@ def build_summary(
     training = client.get_training_status(d) or {}
     activities = client.get_activities(0, activity_window) or []
     garmin_readiness = client.get_training_readiness(d)
+    recent = summarize_activities(activities, activity_window)
 
     return {
         "date": d,
@@ -202,5 +239,6 @@ def build_summary(
         },
         "steps": {"total": stats.get("totalSteps"), "goal": stats.get("dailyStepGoal")},
         "training": summarize_training(training),
-        "recent_activities": summarize_activities(activities, activity_window),
+        "modality_counts": modality_counts(recent),
+        "recent_activities": recent,
     }

@@ -37,14 +37,6 @@ KNOB_SPEC = {
     "intensity_bias": {"type": str, "choices": {"conservative", "balanced", "aggressive"}},
 }
 
-_LABELS = {
-    "notes": "Context",
-    "facilities": "Facilities available",
-    "goals": "Goals",
-    "rehab": "Rehab / constraints",
-}
-
-
 @dataclass
 class Config:
     profile: dict
@@ -64,15 +56,21 @@ def _load_yaml() -> dict:
 
 
 def render_profile(profile: dict) -> str:
-    """Render the profile dict into the athlete-context block for the prompt."""
+    """Render the profile into the athlete-context block for the prompt.
+
+    Sections are free-form: whatever headings the athlete writes under `profile:`
+    are rendered verbatim, each followed by its list of lines. No fixed schema.
+    """
     lines = ["Athlete profile:"]
-    for key in ("notes", "facilities", "goals", "rehab"):
-        vals = profile.get(key)
-        if not vals:
+    for section, items in profile.items():
+        if not items:
             continue
-        lines.append(f"- {_LABELS[key]}:")
-        for v in vals:
-            lines.append(f"    - {v}")
+        lines.append("")
+        lines.append(f"{section}:")
+        if isinstance(items, (list, tuple)):
+            lines.extend(f"  - {item}" for item in items)
+        else:
+            lines.append(f"  {items}")
     return "\n".join(lines)
 
 

@@ -1,26 +1,30 @@
 # hakigains athlete profile — copy this file to `config.yaml` and edit it.
-# `config.yaml` is gitignored (personal). The profile below is rendered into the
-# coach's system prompt. Keep entries short and factual.
+# `config.yaml` is gitignored (personal).
+#
+# Sections under `profile:` are FREE-FORM: use any headings you like, each a list
+# of short factual lines. They are rendered verbatim into the coach's system
+# prompt, so write them the way you'd brief a human coach. The example below is a
+# completely different athlete — replace it entirely with your own.
 
 profile:
-  notes:
-    - Trains near-daily; exercise is a top daily priority.
-    - Uses a Garmin Forerunner 265 (sleep, HRV, Body Battery, training load).
-  facilities:
-    - Full gym
-    - Swimming pool
-    - Outdoor running
-    - Yoga (studio classes + self-practice)
-  goals:
-    - Build a consistent, genuinely good yoga practice.
-  rehab:
-    - Seeing chiro, physio, and TCM Tuina over the coming months; be conservative
-      about heavy loading or high-impact work on any area under treatment.
+  Current Training focus:
+    - Building climbing endurance for multi-pitch trad season
+    - Pilates for hip mobility and anti-rotation core strength
+    - Base trail-running volume kept easy / low heart rate
+  Exercise Types:
+    - Bouldering and sport climbing
+    - Pilates (reformer + mat)
+    - Trail running
+    - Kettlebell strength
+    - Mobility and stretching
+  Notes:
+    - Right shoulder impingement — managing overhead pulling volume.
+    - Trains best in the mornings; often travels to crags on weekends.
 
 # Runtime knobs. These are DEFAULTS; change them live via the bot with
-#   /set <knob> <value>     e.g.  /set intensity_bias aggressive
+#   /set <knob> <value>     e.g.  /set intensity_bias conservative
 # Bot changes are saved to data/settings.json and override these.
 settings:
-  activity_window: 14          # days of activity history to include
-  trend_days: 7                # readiness-trend window
-  intensity_bias: balanced     # conservative | balanced | aggressive
+  activity_window: 21          # days of activity history to include
+  trend_days: 10               # readiness-trend window
+  intensity_bias: aggressive   # conservative | balanced | aggressive

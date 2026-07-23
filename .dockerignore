@@ -1,0 +1,19 @@
+# Build context is the repo root — keep it lean.
+.venv/
+.venv-sam/
+.git/
+.github/
+data/
+tests/
+docs/
+scripts/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.aws-sam/
+.env
+.env.example
+# NOTE: config.yaml is intentionally INCLUDED (the image needs it).

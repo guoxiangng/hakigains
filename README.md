@@ -1,12 +1,15 @@
 # hakigains 🏴‍☠️
 
-A physio-aware **AI training coach** over your Garmin data. Each morning it reads your
-overnight recovery (sleep, HRV, resting HR, Body Battery, training load) plus Garmin's own
-readiness verdict, reasons over the trend, and pushes **one specific session** to your phone
-via Telegram — with a second-opinion cross-check against Garmin. You can also chat with it.
+A self-hosted, **injury-aware AI training coach** over your Garmin data. Each morning it reads
+your overnight recovery (sleep, HRV, resting HR, Body Battery, training load) plus Garmin's own
+readiness verdict, reasons over the trend against **your** goals, and pushes **one specific
+session** to your phone via Telegram — with a second-opinion cross-check against Garmin. You can
+also chat with it.
 
-It is a **scheduled workflow with an LLM reasoning step**, not an autonomous agent. See
-[docs/PRODUCT.md](docs/PRODUCT.md) for the full design.
+Your coaching bias isn't baked into the code — it comes from a profile *you* own (`config.yaml`).
+It is a **scheduled workflow with an LLM reasoning step** plus a gated interactive bot, not an
+autonomous agent. See [docs/PRODUCT.md](docs/PRODUCT.md) for the full design and the explicit
+**built vs not-yet** feature list (e.g. calendar integration is *not* built yet).
 
 ## Self-hosting
 

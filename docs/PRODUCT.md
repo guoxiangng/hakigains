@@ -1,234 +1,163 @@
 # hakigains — Product Notes
 
-> **Haki** (One Piece) — *Kenbunshoku*, the observation/perception sense that lets you read what's coming.
-> This tool observes your body's signals and tells you how to train today. Plus a pun on *gains*.
+> **Haki** (One Piece) — *Kenbunshoku*, the observation sense that reads what's coming.
+> hakigains observes your body's signals and recommends how to train today. Plus a pun on *gains*.
+
+A **self-hosted AI training coach** over your Garmin data. Each morning it reads your overnight
+recovery, reasons over the trend against *your* goals and constraints, cross-checks Garmin's own
+readiness verdict, and pushes **one specific session** to your phone via Telegram. You can also
+chat with it.
 
 ---
 
-## 1. Vision (one-liner)
+## 1. Vision
 
-> Every morning, tell me what to train today — reasoning over my body's readiness, my
-> recovery constraints, my schedule, and my goals — and let me push back or log reality.
+> Every morning, tell me what to train today — grounded in how my body actually is, my recent
+> training, and my own goals — and let me push back or ask questions.
 
-Not a rules engine. An **observation + reasoning** layer over my own data that gives me a
-*specific session with a rationale*, not a generic "easy day / hard day" label.
+Not a rules engine, and not a fixed weekly plan: an **observation + reasoning** layer over your
+own data that gives a *specific session with a rationale*, tuned by a profile **you** own.
 
----
+## 2. Who configures what
 
-## 2. User requirements → Jobs To Be Done
+hakigains ships with **no built-in athlete bias**. Everything personal lives in a per-user
+`config.yaml` (copied from `config.example.yaml`, gitignored):
 
-| # | As me, I want… | So that… |
-|---|----------------|----------|
-| R1 | a specific training recommendation each morning | I stop wasting decision energy on "what do I do today" |
-| R2 | it to read my Garmin readiness (sleep, HRV, resting HR, Body Battery, training load) | the call is grounded in how my body actually is, not a fixed weekly plan |
-| R3 | it to factor in my chiro / physio / TCM Tuina appointments | it never tells me to load a body part I'm rehabbing or that a session will aggravate |
-| R4 | it to nudge me toward yoga | I actually progress on my stated goal instead of defaulting to running |
-| R5 | it to use my huge library of saved Garmin workouts | the recommendation is a *real workout I can press start on*, not an abstract prescription |
-| R6 | to push back and log what I actually did + how it felt | it learns my reality and the advice compounds over time |
-| R7 | to interact with it from my phone | it fits into a morning with zero friction |
-| R8 | my health data to stay under my control | I'm not handing sensitive data to some third-party SaaS |
+- **Profile** — free-form sections (training focus, preferred activities, injuries/constraints,
+  notes). Rendered verbatim into the coach's prompt. This is where *your* specifics go (a rehab
+  program, a yoga goal, a race, whatever) — not in the product code.
+- **Runtime knobs** — `activity_window`, `trend_days`, `intensity_bias`
+  (conservative / balanced / aggressive). Defaults live in the yaml; change them live via the
+  bot's `/set`, persisted to `data/settings.json`.
 
----
+## 3. Requirements → Jobs To Be Done
 
-## 3. Feature set
+| # | As an athlete, I want… | So that… |
+|---|------------------------|----------|
+| R1 | a specific training recommendation each morning | I stop spending decision energy on "what today" |
+| R2 | it grounded in my Garmin readiness (sleep, HRV, resting HR, Body Battery, load) | the call reflects how my body actually is |
+| R3 | it to reason over a multi-day trend, not one snapshot | it catches stacking fatigue, not just today |
+| R4 | it to respect my own goals + injuries (my profile) | advice fits *me* without editing code |
+| R5 | a second opinion vs Garmin's own readiness | I can see when the two coaches agree or differ |
+| R6 | to push back / ask questions from my phone | it fits a real morning with zero friction |
+| R7 | my Garmin credentials to stay under my control | I'm not trusting a stranger's server with my account |
 
-### A. Readiness sensing  *(the "Haki")*
-- Pull from Garmin: sleep score/stages, HRV status, resting HR (+ 7-day trend), Body Battery,
-  training status, training load balance (acute vs chronic), recovery time, VO2max trend.
-- Detect trends, not just today's number: rising resting HR + suppressed HRV + accumulated
-  load → flag **under-recovery**; well-recovered + low recent load → green light for intensity.
+## 4. Feature set
 
-### B. Recommendation reasoning  *(the LLM step)*
-- Reason over readiness + constraints + goals → output **one recommended session** with a
-  short rationale.
-- Example output: *"Zone-2 pool swim, 40 min. HRV is suppressed and physio flagged the left
-  knee — this keeps your aerobic base without loading the joint."*
-- **Map to a real saved workout** (R5): match the recommendation to one of my Garmin workouts
-  where possible, so I can just press start.
+### Built now ✅
+- **Readiness ingest** — Garmin → a compact daily summary: sleep (score/stages/need), HRV
+  (vs baseline), resting HR (vs 7-day avg), Body Battery, stress, respiration, intensity minutes,
+  training status/load balance, and recent activities.
+- **Modality normalization** — folds Garmin's indoor/outdoor type keys
+  (`treadmill_running`+`running` → `run`, `cycling`+`indoor_cycling` → `bike`, …) into coarse
+  buckets + a rolled-up `modality_counts`, so the coach reasons over clean variety.
+- **Reasoning + recommendation** — one LLM call → a specific session with rationale, in a
+  structured Telegram format (Activity / Why / Garmin check / Alternative / Watch-outs).
+- **Garmin second opinion** — ingests Garmin's own training-readiness (score, level, recovery
+  time, ACWR, factor breakdown); the coach forms its own call, then reconciles with Garmin's.
+- **7-day readiness trend** — so the coach sees stacking patterns, not a single day.
+- **Config-driven profile + knobs** — profile from file; `intensity_bias`, `activity_window`,
+  `trend_days` from file defaults, changeable via bot `/set`.
+- **Goal-tied repertoire expansion** — may suggest a modality outside the athlete's usual pattern,
+  but only on a high relevance bar tied to a stated goal, flagged as "worth trying," occasional.
+- **Interactive bot (gated)** — `/brief`, `/ping`, `/settings`, `/set`, and free-form coaching
+  Q&A grounded in today's data. Locked to the owner's chat ID.
+- **Delivery** — Telegram push (scheduled briefing) + interactive replies.
+- **Deployment** — runs locally, or serverless on AWS (Lambda + EventBridge + Function URL +
+  Secrets Manager + S3) via AWS SAM.
 
-### C. Constraint awareness  *(the interlink layer)*
-- **Calendar**: today's / this week's chiro, physio, TCM Tuina → constrains intensity, body
-  part, and timing.
-- **Interlink rules** I maintain in my health project (e.g. "no heavy legs the day after
-  physio") fed in as explicit constraints, not inferred.
-- **Yoga goal** (R4): track frequency, nudge when I've drifted.
-- **Facility / weather** (later): pool vs gym availability, studio class schedule, rain if an
-  outdoor run is in play.
-
-### D. Feedback & memory loop
-- Log **planned vs actual** + a one-line subjective check-in (soreness / energy / motivation).
-- History feeds back as trend context. **The app's own store is a local file** (JSON/SQLite),
-  portable to S3/DynamoDB later — the standalone build does *not* couple to Obsidian.
-  (Mirroring briefings into my personal Obsidian vault is a nice-to-have for *me*, kept
-  separate from the app's data model.)
-- **Weekly review**: adherence, load progression, yoga frequency vs goal.
-
-### E. Interaction (Telegram)
-- Morning briefing **pushed** to me.
-- **Two-way**: "give me something shorter", "I'm travelling", "why that?" → it re-reasons.
-- Quick logging of what I actually did.
-
-### MVP cut
-**In:** A + B (basic) + C (calendar only) + E (push briefing + simple logging).
-**Later:** workout-library mapping, weather/facility, weekly review, Obsidian memory loop.
-
----
-
-## 4. Interaction model — do I want a Telegram bot?
-
-**Yes — Telegram is the right front end**, because the product needs *two* modes and Telegram
-covers both on mobile with near-zero friction:
-
-- **Push** (proactive): the morning briefing arrives without me asking.
-- **Pull** (conversational): I reply to push back, ask "why", or log reality.
-
-Alternatives and why they lose:
-- **Email / Obsidian daily note** — push-only, no back-and-forth.
-- **A CLI** — great for building, useless at 7am on my phone.
-- **A custom app** — massive overkill for one user.
-
-> **Security note:** lock the bot to *my own Telegram chat ID* — bots accept messages from
-> anyone by default. Ignore all other senders.
-
----
+### Not yet — roadmap ⬜
+These are **explicitly not in the current build**:
+- **Calendar integration** — feeding appointments/events (e.g. a rehab schedule) as hard
+  constraints. *Not implemented.* Today, constraints only influence the coach via free-text notes
+  in the profile, which it treats as soft guidance — it does **not** read any calendar.
+- **Feedback loop** — logging planned vs actual + how it felt, fed back as history. *Not built.*
+- **Workout-library mapping** — mapping a recommendation to a real saved Garmin workout (and
+  optionally scheduling it to the watch). *Not built* (the Garmin endpoints exist; the feature
+  doesn't).
+- **Evaluation** — tracking bot-rec vs Garmin-rec vs outcome over time. *Not built.*
+- **Weather / facility awareness, second sport-specific models.** *Not built.*
+- **Bedrock/Claude provider** — the LLM abstraction exists; only Azure OpenAI is implemented today.
 
 ## 5. Is it an "agent"?
 
-Useful to be precise, because it drives the architecture and the risk profile.
+| Level | What it is | This product? |
+|-------|-----------|---------------|
+| 0 | Cron + rules engine, no LLM | ✗ — deliberately not rules-based |
+| 1 | **Scheduled workflow with an LLM reasoning step** | ✓ **the morning briefing** |
+| 2 | **LLM with light tools / conversation** | ✓ **the interactive bot** (Q&A + commands) |
+| 3 | **Autonomous agent taking real-world actions** | ✗ **never** — out of scope by design |
 
-| Level | What it is | Is it this product? |
-|-------|-----------|---------------------|
-| 0 | Cron + rules engine, no LLM | ✗ — I explicitly don't want rules-based |
-| 1 | **Scheduled pipeline with an LLM reasoning step** — deterministic code gathers data, one LLM call reasons, output delivered | ✓ **the morning briefing** |
-| 2 | **LLM with tools (agentic loop)** — the model decides which tools to call, iterates, holds conversation state | ✓ *thin layer* for interactive Q&A ("why?", "what about my knee?") |
-| 3 | **Autonomous agent** — takes real-world actions on its own (books classes, edits calendar) | ✗ **never**, given my security posture |
+hakigains is a **Level-1 workflow** plus a **Level-2 interactive layer**. It is not autonomous:
+it recommends and answers; it does not act on your accounts or calendar. This keeps it cheap,
+reliable, and easy to reason about.
 
-**Verdict:** hakigains is mostly a **Level-1 workflow with an LLM in it**, plus an optional
-**Level-2 thin agent** for the interactive side. It is *not* an autonomous agent, and
-deliberately so. This matches the "prefer the simplest thing that works — a workflow over an
-agent unless you truly need the flexibility" principle. The Level-1 core is cheaper, more
-reliable, and far easier to debug than a full agent, and it's what does 90% of the value.
+## 6. Interaction model — Telegram
 
----
+Two modes: **push** (the scheduled briefing arrives unprompted) and **pull** (you reply, ask
+"why", or tweak a knob). Telegram covers both on mobile with near-zero friction.
 
-## 6. Architecture
+**Security (hard rules):** bots are publicly reachable — anyone can *message* the bot, so safety
+comes from what it *does*. The very first step on any inbound message is a **chat-ID allowlist**;
+unknown senders are ignored and never touch data, the LLM, or Garmin. Outbound is pinned to the
+owner's chat ID. The bot **token** is a real secret (rotate via BotFather `/revoke` on exposure).
+Telegram bot chats are not end-to-end encrypted — fine for training tips, not for anything you'd
+treat as medical-record sensitive.
+
+## 7. Architecture
 
 ```
-                     ┌─────────────────────────────────────┐
-                     │           SCHEDULED (daily)          │
-   EventBridge /     │                                      │
-   cron  ──────────► │  ingest.py   → clean daily summary   │
-                     │     │  (Garmin: sleep/HRV/HR/load)    │
-                     │     ▼                                 │
-   Google Calendar ─►│  enrich.py   → + appointments,       │
-   (constraints)     │     │           yoga cadence, rules  │
-                     │     ▼                                 │
-   History store  ──►│  reason.py   → LLM call → session +   │
-   (past recs+logs)  │     │           rationale            │
-                     │     ▼                                 │
-                     │  deliver.py  → Telegram push          │
-                     └─────────────────────────────────────┘
+                     ┌──────────────────────────────────────────┐
+   EventBridge  ───► │  SCHEDULED (daily briefing)               │
+   (cron)            │  ingest ─► reason ─► deliver (Telegram)   │
+                     └──────────────────────────────────────────┘
+   Telegram    ───►  ┌──────────────────────────────────────────┐
+   webhook /         │  INTERACTIVE (on demand)                  │
+   long-poll         │  bot/core (GATED) ─► /brief · /set · Q&A  │
+                     └──────────────────────────────────────────┘
 
-                     ┌─────────────────────────────────────┐
-   Telegram msg ────►│         INTERACTIVE (on demand)      │
-   (webhook/poll)    │  bot.py → thin agent: query history, │
-                     │           re-reason, log actual      │
-                     └─────────────────────────────────────┘
-
-   Secrets: Garmin creds + token, Anthropic key, Telegram token  (never in repo)
-   State:   history of {planned, actual, felt}  → local JSON/SQLite → S3 / DynamoDB later
-   LLM:     provider abstraction — OpenAI now, Bedrock/Claude later
+   Config:  profile (config.yaml, file) + knobs (data/settings.json, via /set)
+   Secrets: Garmin creds, LLM key, Telegram token — never in the repo
+   LLM:     provider abstraction — Azure OpenAI now, Bedrock/Claude later
 ```
 
-**Components (shared code, two entry points):**
-- `ingest` — Garmin pull → clean, denoised daily summary (not raw time-series).
-- `enrich` — merge calendar constraints, yoga cadence, my health-project interlink rules.
-- `reason` — single LLM call behind a **provider abstraction** (`llm/` interface):
-  readiness + constraints + goals → recommended session. Swap providers without touching
-  callers — **OpenAI now** (temporary key), **Bedrock/Claude later** (the security-ideal:
-  reasoning stays inside my own AWS account).
-- `deliver` — format + push to Telegram.
-- `bot` — interactive handler (the thin Level-2 piece).
+**Package (`src/hakigains/`):** `config` · `garmin_client` · `ingest` · `reason` · `deliver` ·
+`bot`. The chat-ID gate + routing live in `bot/core.py`, imported by **both** the local
+long-poll listener and the Lambda webhook — so neither can skip the gate.
 
----
+## 8. Runtime & hosting
 
-## 7. Runtime & hosting
+**Runtime:** Python 3.12; `garminconnect`, `openai`, `requests`, `PyYAML`. Tiny compute footprint.
 
-**Runtime:** Python 3.12 (garminconnect + garth are Python; Anthropic SDK is Python).
-Compute footprint is *tiny* — a few runs a day + occasional messages. 128–256 MB is plenty.
+- **Local** — `pip install -e .`, run `scripts/run_briefing.py` (cron/Task Scheduler) and
+  `scripts/run_listener.py` (always-on long-poll bot). Data never leaves your machine (except the
+  LLM call).
+- **AWS (SAM)** — container-image Lambdas: a scheduled briefing (EventBridge) and a Telegram
+  **webhook** (Function URL). Secrets Manager holds creds; an S3 bucket persists the Garmin auth
+  token + settings across cold starts (Lambda's filesystem is ephemeral, and Garmin rate-limits
+  logins). See [DEPLOY.md](DEPLOY.md).
 
-**Dependencies of note:** `garminconnect` (+`garth`), an LLM SDK behind a thin provider
-interface (`openai` now; `boto3` for Bedrock later), `requests`/`httpx`, Telegram
-(`python-telegram-bot` for long-poll locally, or raw Bot API for webhook on Lambda).
+## 9. Security posture
 
-### Hosting options
+- **Self-hosted trust model** — each user runs their own copy; Garmin credentials stay in *their*
+  `.env` / *their* AWS account. There is no central service holding anyone's password. (A hosted
+  multi-user version would need Garmin's official OAuth, whose developer program is currently on
+  hold — so self-host is the path.)
+- **Garmin: read-only** in practice (login is the only write).
+- **One external egress to name honestly:** the reasoning step sends a *summarized* readiness
+  picture to the LLM provider. On Azure OpenAI that data leaves your control; moving the provider
+  to **Bedrock/Claude in your own AWS account** would close that egress. Send a clean summary, not
+  raw exhaustive data.
 
-| Option | Fit | Pros | Cons |
-|--------|-----|------|------|
-| **Local always-on** (my machine / Pi / NAS) + cron | iteration | free, fast feedback, **data never leaves home**, long-poll needs no inbound port | uptime is on me |
-| **AWS serverless** (EventBridge Scheduler → Lambda for briefing; Telegram **webhook** → Lambda Function URL; Secrets Manager; S3/DynamoDB for state) | production | scales to zero, ~free at this volume, secrets done right, **on-brand for my AWS content** | Garmin token must persist externally (S3/Secrets round-trip); container image easiest for packaging |
-| **Small VPS / PaaS** (Fly.io, Railway, Oracle free tier, t4g.nano) | middle | persistent process = simplest long-poll bot | always-on cost + I patch the box |
-| **GitHub Actions cron** | briefing only | free scheduler | no interactive bot; health data in CI is meh; coarse cron |
+## 10. Roadmap
 
-### Recommended path (phased)
-
-- **Phase 1 — local.** Run it on my own machine: Task Scheduler/cron for the briefing +
-  long-polling Telegram bot. Fastest iteration, data stays local, no infra to stand up. This
-  is where we tune the reasoning prompt.
-- **Phase 2 — AWS serverless** (once stable, and worth an article). EventBridge Scheduler →
-  Lambda briefing; Telegram **webhook** → Lambda Function URL; Secrets Manager for Garmin
-  creds + token + Anthropic key; S3 or DynamoDB (or Obsidian-via-git) for history.
-
-> **Lambda gotcha to design for:** garth caches an auth token on the local filesystem, which
-> is ephemeral on Lambda. Persist the token in S3/Secrets Manager, load it at cold start,
-> refresh, and write it back — don't re-login every invocation (Garmin rate-limits logins).
-
----
-
-## 8. Security posture
-
-- **Garmin: read-only** in practice — we only read data (login is the only write).
-- **No bank/brokerage access** — that was the *finance* idea; explicitly out of scope here.
-- **Health data stays mine** — local, or my own AWS account. Not a third-party SaaS.
-- **Token file** gitignored + tight perms; creds only in `.env` (local) / Secrets Manager (AWS).
-- **Telegram** locked to my own chat ID.
-- **One external egress to name honestly:** the reasoning step sends a *summarised* daily
-  readiness picture to the LLM provider. With the **temporary OpenAI key**, that data leaves
-  my control — so we send a clean summary, not raw exhaustive data. The **provider
-  abstraction** exists partly for this: moving to **Bedrock/Claude** later keeps the reasoning
-  call *inside my own AWS account*, closing this egress entirely. That's the security-ideal
-  end state.
-
-### Security — Telegram (hard rules)
-
-Telegram bots are publicly discoverable and *anyone* can send them messages — you cannot
-prevent strangers from messaging `@hakigains_coach_bot`. Safety comes from what the bot
-*does* with those messages, not from hiding it. Non-negotiable rules:
-
-1. **Chat-ID allowlist (the door).** The interactive bot's very first step on any inbound
-   message is: `if chat_id != TELEGRAM_CHAT_ID: ignore`. It must **never** touch Garmin data,
-   history, or the LLM for an unknown sender. Strangers can knock; the door only opens for me.
-2. **Outbound is pinned.** `send_message` only ever sends to my configured chat ID — never
-   echoes back to an arbitrary inbound chat.
-3. **The token is the crown jewel.** Whoever holds `TELEGRAM_BOT_TOKEN` can impersonate the
-   bot *and* read everything sent to it (`getUpdates`). Keep it in `.env`/Secrets Manager,
-   never in the repo, and **rotate it** (BotFather → `/revoke`) after any exposure.
-4. **Telegram is not end-to-end encrypted for bots.** Message contents pass through Telegram's
-   servers. Acceptable for low-sensitivity training tips; do **not** send anything I'd treat
-   as medical-record sensitive through it.
-
----
-
-## 9. Roadmap
-
-1. ✅ **Milestone 1** — Garmin auth + daily data pull (done).
-2. **Milestone 2** — `ingest`: turn the raw pull into a clean daily readiness summary.
-3. **Milestone 3** — `reason`: provider abstraction + first LLM call (OpenAI) → recommended
-   session + rationale (local).
-4. **Milestone 4** — Telegram push of the briefing.
-5. **Milestone 5** — `enrich`: Google Calendar constraints + yoga cadence.
-6. **Milestone 6** — feedback loop: log planned vs actual + subjective check-in.
-7. **Milestone 7** — workout-library mapping (recommend a *real* saved workout).
-8. **Milestone 8** — AWS serverless port (+ swap LLM provider to Bedrock/Claude, closing the
-   external egress).
-9. **Later** — Obsidian memory loop, weekly review, weather/facility.
+1. ✅ Garmin ingest + readiness summary
+2. ✅ Reasoning + briefing → Telegram
+3. ✅ Garmin second opinion + 7-day trend
+4. ✅ Interactive gated bot + config profile/knobs
+5. ✅ Modality normalization + goal-tied repertoire expansion
+6. ✅ AWS SAM deployment path
+7. ⬜ Calendar constraints (hard scheduling/rehab constraints) — **not started**
+8. ⬜ Feedback loop (planned vs actual vs felt) + evaluation
+9. ⬜ Workout-library mapping (recommend/schedule a real saved workout)
+10. ⬜ Bedrock/Claude provider; weather/facility awareness

@@ -3,7 +3,10 @@ import os
 
 from garminconnect import Garmin
 
-TOKEN_STORE = os.path.expanduser("~/.hakigains/garth_token")
+# Env-overridable so Lambda can point at /tmp (ephemeral) with an S3-synced token.
+TOKEN_STORE = os.environ.get(
+    "HAKIGAINS_TOKEN_PATH", os.path.expanduser("~/.hakigains/garth_token")
+)
 
 
 def get_client() -> Garmin:

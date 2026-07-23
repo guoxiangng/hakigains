@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hakigains"
+version = "0.1.0"
+description = "A physio-aware AI training coach over Garmin data, delivered via Telegram."
+requires-python = ">=3.11"
+dependencies = [
+    "garminconnect",
+    "openai",
+    "requests",
+    "python-dotenv",
+    "PyYAML",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hakigains = ["py.typed"]

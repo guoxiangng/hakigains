@@ -1,7 +1,7 @@
 """Smoke test: verify the configured LLM provider is reachable and responds."""
 from dotenv import load_dotenv
 
-from llm.factory import get_provider
+from hakigains.llm.factory import get_provider
 
 load_dotenv()
 

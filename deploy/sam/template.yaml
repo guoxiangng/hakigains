@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: hakigains — scheduled briefing + Telegram webhook (ap-southeast-1)
+
+Parameters:
+  SecretName:
+    Type: String
+    Description: Secrets Manager secret holding GARMIN_*, AZURE_OPENAI_*, TELEGRAM_* keys.
+  TelegramChatId:
+    Type: String
+    Description: The owner's Telegram chat ID (the bot's allowlist).
+  BriefingCron:
+    Type: String
+    Default: "cron(0 23 * * ? *)"   # 07:00 SGT (UTC+8) daily
+    Description: EventBridge schedule expression (UTC) for the morning briefing.
+
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 512
+    Environment:
+      Variables:
+        HAKIGAINS_SECRET_NAME: !Ref SecretName
+        HAKIGAINS_STATE_BUCKET: !Ref StateBucket
+        HAKIGAINS_CONFIG: /var/task/config.yaml
+        HAKIGAINS_TOKEN_PATH: /tmp/garth_token
+        HAKIGAINS_DATA_DIR: /tmp/hakigains-data
+        TELEGRAM_CHAT_ID: !Ref TelegramChatId
+        LLM_PROVIDER: azure_openai
+
+Resources:
+  StateBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ScheduledBriefingFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      Dockerfile: deploy/lambda/Dockerfile
+      DockerContext: ../..        # repo root, so COPY src/ etc. resolve
+      DockerTag: briefing
+    Properties:
+      PackageType: Image
+      ImageConfig:
+        Command: ["handler.scheduled_briefing"]
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretName}*" }
+        - S3CrudPolicy: { BucketName: !Ref StateBucket }
+      Events:
+        Daily:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref BriefingCron
+
+  WebhookFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      Dockerfile: deploy/lambda/Dockerfile
+      DockerContext: ../..
+      DockerTag: webhook
+    Properties:
+      PackageType: Image
+      ImageConfig:
+        Command: ["handler.telegram_webhook"]
+      FunctionUrlConfig:
+        AuthType: NONE            # Telegram posts here; the chat-ID gate is the guard
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretName}*" }
+        - S3CrudPolicy: { BucketName: !Ref StateBucket }
+
+Outputs:
+  WebhookUrl:
+    Description: Set this as the Telegram webhook (see DEPLOY.md).
+    Value: !GetAtt WebhookFunctionUrl.FunctionUrl
+  StateBucketName:
+    Value: !Ref StateBucket

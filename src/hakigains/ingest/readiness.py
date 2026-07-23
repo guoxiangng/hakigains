@@ -158,7 +158,12 @@ def summarize_activities(activities: list, limit: int = 14) -> list:
     return out
 
 
-def build_summary(client, target_date: str | None = None) -> dict:
+def build_summary(
+    client,
+    target_date: str | None = None,
+    activity_window: int = 14,
+    trend_days: int = 7,
+) -> dict:
     """Pull one day + recent activities and return a compact readiness summary."""
     d = target_date or date.today().isoformat()
 
@@ -166,13 +171,13 @@ def build_summary(client, target_date: str | None = None) -> dict:
     sleep = client.get_sleep_data(d) or {}
     hrv = client.get_hrv_data(d) or {}
     training = client.get_training_status(d) or {}
-    activities = client.get_activities(0, 14) or []
+    activities = client.get_activities(0, activity_window) or []
     garmin_readiness = client.get_training_readiness(d)
 
     return {
         "date": d,
         "garmin_readiness": summarize_garmin_readiness(garmin_readiness),
-        "readiness_trend_7d": build_readiness_trend(client, d, 7),
+        "readiness_trend": build_readiness_trend(client, d, trend_days),
         "sleep": summarize_sleep(sleep),
         "hrv": summarize_hrv(hrv),
         "resting_hr": {
@@ -197,5 +202,5 @@ def build_summary(client, target_date: str | None = None) -> dict:
         },
         "steps": {"total": stats.get("totalSteps"), "goal": stats.get("dailyStepGoal")},
         "training": summarize_training(training),
-        "recent_activities": summarize_activities(activities),
+        "recent_activities": summarize_activities(activities, activity_window),
     }

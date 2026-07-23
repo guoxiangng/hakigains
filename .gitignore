@@ -4,5 +4,16 @@ __pycache__/
 *.pyc
 .garth/
 *.token
-data/raw/
-data/cache/
+
+# Personal profile + runtime state (per self-hoster)
+config.yaml
+data/
+
+# Python packaging
+*.egg-info/
+build/
+dist/
+
+# SAM / deploy build artifacts
+.aws-sam/
+deploy/**/samconfig.toml

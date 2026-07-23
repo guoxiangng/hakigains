@@ -1,14 +1,13 @@
-"""One-time helper: after creating the bot and messaging it, discover the
-chat ID and send a confirmation message.
+"""One-time helper: after creating the bot and messaging it, discover the chat
+ID and send a confirmation message.
 
-Usage:
   1. Put TELEGRAM_BOT_TOKEN in .env
   2. Send any message to your new bot from Telegram
-  3. Run this script; it prints your chat ID and sends a test message
+  3. Run this; it prints your chat ID and sends a test message
 """
 from dotenv import load_dotenv
 
-from deliver.telegram import get_recent_chat_id, send_message
+from hakigains.deliver.telegram import get_recent_chat_id, send_message
 
 load_dotenv()
 

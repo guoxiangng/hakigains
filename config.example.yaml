@@ -1,0 +1,26 @@
+# hakigains athlete profile — copy this file to `config.yaml` and edit it.
+# `config.yaml` is gitignored (personal). The profile below is rendered into the
+# coach's system prompt. Keep entries short and factual.
+
+profile:
+  notes:
+    - Trains near-daily; exercise is a top daily priority.
+    - Uses a Garmin Forerunner 265 (sleep, HRV, Body Battery, training load).
+  facilities:
+    - Full gym
+    - Swimming pool
+    - Outdoor running
+    - Yoga (studio classes + self-practice)
+  goals:
+    - Build a consistent, genuinely good yoga practice.
+  rehab:
+    - Seeing chiro, physio, and TCM Tuina over the coming months; be conservative
+      about heavy loading or high-impact work on any area under treatment.
+
+# Runtime knobs. These are DEFAULTS; change them live via the bot with
+#   /set <knob> <value>     e.g.  /set intensity_bias aggressive
+# Bot changes are saved to data/settings.json and override these.
+settings:
+  activity_window: 14          # days of activity history to include
+  trend_days: 7                # readiness-trend window
+  intensity_bias: balanced     # conservative | balanced | aggressive

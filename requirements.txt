@@ -2,3 +2,4 @@ garminconnect
 python-dotenv
 openai
 requests
+PyYAML

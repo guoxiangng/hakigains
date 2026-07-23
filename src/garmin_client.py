@@ -1,0 +1,16 @@
+"""Shared Garmin client with local token caching (avoids re-login / rate limits)."""
+import os
+
+from garminconnect import Garmin
+
+TOKEN_STORE = os.path.expanduser("~/.hakigains/garth_token")
+
+
+def get_client() -> Garmin:
+    client = Garmin(os.environ["GARMIN_EMAIL"], os.environ["GARMIN_PASSWORD"])
+    try:
+        client.login(TOKEN_STORE)
+    except Exception:
+        client.login()
+        client.garth.dump(TOKEN_STORE)
+    return client

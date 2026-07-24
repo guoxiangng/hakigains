@@ -194,6 +194,10 @@
   .route pre{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--ink);
     white-space:pre}
   .route .g{color:var(--gold)} .route .h{color:var(--haki)} .route .t{color:var(--teal)} .route .m{color:var(--faint)}
+  .payload-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:20px;align-items:start}
+  .payload-grid .route{height:100%}
+  .panel-label{font-family:var(--serif);text-transform:uppercase;letter-spacing:.14em;
+    font-size:11px;color:var(--faint);margin:0 0 10px}
 
   /* ---------- status ---------- */
   .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
@@ -231,6 +235,7 @@
     .trio,.status-grid{grid-template-columns:1fr 1fr}
     .decision{grid-template-columns:1fr;gap:6px}
     .phones{grid-template-columns:1fr}
+    .payload-grid{grid-template-columns:1fr}
   }
   @media (max-width:520px){
     .trio,.status-grid{grid-template-columns:1fr}
@@ -307,8 +312,8 @@
     <!-- TAGLINE -->
     <div class="tagline">
       <h1>An AI training coach that senses your recovery and tells you how to train today.</h1>
-      <p>It reads my Garmin overnight data, reasons over the trend against <em>my own</em> goals,
-      cross-checks Garmin's own verdict, and sends one specific session to my phone. I can talk
+      <p>It reads your Garmin overnight data, reasons over the trend against <em>your own</em> goals,
+      cross-checks Garmin's own verdict, and sends one specific session to your phone. You can talk
       back to it.</p>
       <div class="setsail">
         <span class="chip"><span class="pk">$</span> pip install -e .</span>
@@ -325,15 +330,14 @@
     <section>
       <div class="sec-head"><span class="eyebrow">The problem</span></div>
       <div class="prose">
-        <p>I train almost every day and have access to a gym, a pool, running routes, and a
-        huge library of saved Garmin workouts — but every morning I still had to decide, from
-        scratch, what today's session should actually be. Garmin's own "training status" widget
-        gives a label; it doesn't reason about my week, my goals, or what else is going on in
-        my schedule.</p>
-        <p>I didn't want a rules engine (<span class="mono">if readiness &lt; 30: rest</span>)
-        — that can't weigh trade-offs the way a real coach does. I wanted an AI layer that reads
-        the same data a coach would, and tells me what to do about it in plain language, with a
-        reason I can push back on.</p>
+        <p>Imagine you train almost every day — full gym access, a pool, running routes, and a
+        huge library of saved Garmin workouts — but you still have to decide, from scratch,
+        every morning, what today's session should actually be. Garmin's own "training status"
+        widget gives you a label; it doesn't reason about your week, your goals, or what else
+        is going on in your schedule.</p>
+        <p>A rules engine (<span class="mono">if readiness &lt; 30: rest</span>) can't weigh
+        trade-offs the way a real coach does. hakigains reads the same data a coach would, and
+        tells you what to do about it in plain language — with a reason you can push back on.</p>
       </div>
     </section>
 
@@ -441,8 +445,8 @@
         <div class="decision">
           <div class="d-label">Self-hosted, not a service</div>
           <p><strong>No central server ever holds your Garmin password.</strong> There's no
-          public Garmin API for personal use, so the only path is a login-based library — and I
-          wasn't willing to build a hosted product that stores other people's credentials. Each
+          public Garmin API for personal use, so the only path is a login-based library — and a
+          hosted product that stores other people's credentials isn't worth the risk. Each
           user runs their own copy, with their own bot, on their own AWS account.</p>
         </div>
         <div class="decision">
@@ -455,8 +459,56 @@
           <div class="d-label">A workflow, not an agent</div>
           <p>The daily briefing is a deterministic pipeline with one LLM reasoning step —
           predictable, cheap, easy to debug. Only the interactive side behaves agent-like, and
-          it's hard-gated to my own Telegram chat ID; strangers can message the bot, but it
-          never touches my data.</p>
+          it's hard-gated to your own Telegram chat ID; strangers can message the bot, but it
+          never touches your data.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAYLOAD -->
+    <section>
+      <div class="sec-head"><span class="eyebrow">No magic</span><h2>What actually goes into the model</h2></div>
+      <p class="lede">No secret sauce — a rendered profile, a short set of reasoning rules, and
+      a compact JSON summary. This is the real shape of both.</p>
+      <div class="payload-grid">
+        <div>
+          <p class="panel-label">config.yaml — yours to edit</p>
+          <div class="route">
+<pre><span class="g">profile</span>:
+  <span class="h">Training Focus</span>:
+    - Build climbing endurance
+    - Add pilates for hip mobility
+  <span class="h">Constraints</span>:
+    - Managing a shoulder impingement
+
+<span class="g">settings</span>:
+  intensity_bias: balanced
+  trend_days: 7    <span class="m"># live-tunable via /set</span></pre>
+          </div>
+        </div>
+        <div>
+          <p class="panel-label">the LLM call — system + user</p>
+          <div class="route">
+<pre><span class="g">SYSTEM</span>
+  persona + injury-aware framing
+  <span class="h">↳ profile</span>          rendered from config.yaml, verbatim
+  <span class="h">↳ reasoning rules</span>  recovery sets the intensity ceiling
+                         load balance sets the modality
+                         avoid repeating an overused modality
+                         occasional goal-tied novelty (high bar)
+  <span class="h">↳ second opinion</span>   reconcile with Garmin's own readiness score
+  <span class="h">↳ output format</span>    5 labeled sections, Telegram markdown
+
+<span class="g">USER</span>  <span class="m">— the readiness summary, e.g.:</span>
+  <span class="t">sleep</span>              hours, score, stage minutes, sleep-need
+  <span class="t">hrv</span>                last-night vs weekly avg, status, baseline
+  <span class="t">resting_hr</span>         today vs 7-day average
+  <span class="t">body_battery</span> · <span class="t">stress</span> · <span class="t">respiration</span> · <span class="t">intensity_min</span>
+  <span class="t">training</span>           load-balance feedback, monthly targets
+  <span class="t">garmin_readiness</span>   Garmin's own score + factor breakdown
+  <span class="t">readiness_trend</span>    7-day series, not just today
+  <span class="t">recent_activities</span>  normalized modality, duration, load</pre>
+          </div>
         </div>
       </div>
     </section>

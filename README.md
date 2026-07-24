@@ -1,6 +1,6 @@
 # hakigains 🏴‍☠️
 
-A self-hosted, **injury-aware AI training coach** over your Garmin data. Each morning it reads
+A self-hosted **AI training coach** over your Garmin data. Each morning it reads
 your overnight recovery (sleep, HRV, resting HR, Body Battery, training load) plus Garmin's own
 readiness verdict, reasons over the trend against **your** goals, and pushes **one specific
 session** to your phone via Telegram — with a second-opinion cross-check against Garmin. You can

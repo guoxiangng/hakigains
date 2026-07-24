@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "hakigains"
 version = "0.1.0"
-description = "A physio-aware AI training coach over Garmin data, delivered via Telegram."
+description = "An AI training coach over Garmin data, delivered via Telegram."
 requires-python = ">=3.11"
 dependencies = [
     "garminconnect",

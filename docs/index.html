@@ -82,8 +82,6 @@
     font-size:clamp(30px,6.4vw,52px);letter-spacing:.16em;color:var(--ink);line-height:1;margin:4px 0 2px}
   .poster .sub{font-family:var(--serif);letter-spacing:.4em;text-transform:uppercase;
     font-size:10.5px;color:var(--crimson);font-weight:700;margin-bottom:14px}
-  .emblem{width:112px;height:112px;margin:4px auto 8px;color:var(--ink);
-    filter:drop-shadow(0 6px 14px rgba(0,0,0,.35))}
   .wordmark{font-family:var(--display);font-weight:700;font-size:clamp(34px,7vw,54px);
     letter-spacing:-.02em;line-height:1;margin:2px 0 6px}
   .wordmark .gk{color:var(--gold)}
@@ -101,6 +99,18 @@
     border:2px solid var(--crimson);color:var(--crimson);border-radius:6px;
     font-family:var(--serif);text-transform:uppercase;letter-spacing:.1em;font-weight:700;
     font-size:10px;padding:5px 9px;opacity:.85;line-height:1.15;text-align:center}
+
+  .rule2{width:64%;margin:6px auto 14px;height:6px;
+    border-top:2px solid var(--line);border-bottom:1px solid var(--line)}
+  .nail{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:7px;height:7px;
+    border-radius:50%;background:var(--faint);box-shadow:0 1px 2px rgba(0,0,0,.4);opacity:.55}
+  .foxing{position:absolute;border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle,rgba(140,100,40,.16),transparent 70%)}
+  .portrait-frame{width:172px;height:172px;margin:2px auto 16px;padding:10px;
+    border:2px solid var(--line);border-radius:4px;
+    background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,0));
+    box-shadow:inset 0 0 0 1px var(--line-soft), inset 0 2px 12px rgba(0,0,0,.2)}
+  .portrait-frame svg{width:100%;height:100%;display:block}
 
   .tagline{max-width:640px;margin:26px auto 0;text-align:center}
   .tagline h1{font-family:var(--display);font-weight:700;font-size:clamp(23px,4.2vw,32px);
@@ -244,32 +254,39 @@
     <div class="hero">
       <canvas id="haki" aria-hidden="true"></canvas>
       <div class="poster">
+        <div class="nail" aria-hidden="true"></div>
+        <div class="foxing" style="width:34px;height:34px;left:8%;top:34%" aria-hidden="true"></div>
+        <div class="foxing" style="width:26px;height:26px;right:11%;top:58%" aria-hidden="true"></div>
+
         <div class="wanted">Wanted</div>
         <div class="sub">Dead or Recovered</div>
+        <div class="rule2" aria-hidden="true"></div>
 
-        <svg class="emblem" viewBox="0 0 120 120" fill="none" aria-hidden="true">
-          <g stroke="var(--gold)" stroke-width="5" stroke-linecap="round">
-            <g transform="rotate(38 60 60)">
-              <line x1="26" y1="60" x2="94" y2="60"/>
-              <line x1="24" y1="49" x2="24" y2="71"/><line x1="33" y1="53" x2="33" y2="67"/>
-              <line x1="96" y1="49" x2="96" y2="71"/><line x1="87" y1="53" x2="87" y2="67"/>
+        <div class="portrait-frame">
+          <svg viewBox="0 0 160 160" fill="none" aria-hidden="true">
+            <!-- bust / shoulders -->
+            <path d="M38 152C38 112 55 90 80 90C105 90 122 112 122 152Z" fill="var(--ink)"/>
+            <!-- head -->
+            <circle cx="80" cy="66" r="25" fill="var(--ink)"/>
+            <!-- scar (Luffy-style, under left eye) -->
+            <line x1="65" y1="57" x2="72" y2="70" stroke="var(--paper)" stroke-width="3" stroke-linecap="round"/>
+            <!-- straw hat -->
+            <g transform="rotate(-5 80 30)">
+              <ellipse cx="80" cy="39" rx="54" ry="9.5" fill="var(--gold)"/>
+              <rect x="55" y="10" width="50" height="30" rx="15" fill="var(--gold)"/>
+              <rect x="53" y="29" width="54" height="8" fill="var(--crimson)"/>
             </g>
-            <g transform="rotate(-38 60 60)">
-              <line x1="26" y1="60" x2="94" y2="60"/>
-              <line x1="24" y1="49" x2="24" y2="71"/><line x1="33" y1="53" x2="33" y2="67"/>
-              <line x1="96" y1="49" x2="96" y2="71"/><line x1="87" y1="53" x2="87" y2="67"/>
+            <!-- crossed dumbbells over chest -->
+            <g stroke="var(--gold)" stroke-width="8" stroke-linecap="round">
+              <line x1="48" y1="140" x2="112" y2="103"/>
+              <line x1="112" y1="140" x2="48" y2="103"/>
             </g>
-          </g>
-          <g>
-            <path d="M60 24c-19 0-32 13-32 31 0 11 5 17 11 21 2 1 3 3 3 6v4c0 2 2 4 4 4h28c2 0 4-2 4-4v-4c0-3 1-5 3-6 6-4 11-10 11-21 0-18-13-31-32-31Z" fill="var(--ink)"/>
-            <ellipse cx="47" cy="57" rx="8.5" ry="10" fill="var(--ground)"/>
-            <ellipse cx="73" cy="57" rx="8.5" ry="10" fill="var(--ground)"/>
-            <circle cx="47" cy="57" r="3.4" fill="var(--haki)"/>
-            <circle cx="73" cy="57" r="3.4" fill="var(--haki)"/>
-            <path d="M60 66l-4 9h8l-4-9Z" fill="var(--ground)"/>
-            <g stroke="var(--ground)" stroke-width="2.4"><line x1="52" y1="86" x2="52" y2="94"/><line x1="60" y1="86" x2="60" y2="95"/><line x1="68" y1="86" x2="68" y2="94"/></g>
-          </g>
-        </svg>
+            <g fill="var(--gold)">
+              <circle cx="48" cy="140" r="8"/><circle cx="112" cy="103" r="8"/>
+              <circle cx="112" cy="140" r="8"/><circle cx="48" cy="103" r="8"/>
+            </g>
+          </svg>
+        </div>
 
         <div class="wordmark"><span class="gk">haki</span>gains</div>
         <div class="deadline">Reads your body's <b>Haki</b> · reports at dawn</div>

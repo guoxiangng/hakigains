@@ -19,7 +19,7 @@ _BOOTSTRAPPED = False
 _CLIENT = None
 _LLM = None
 
-TOKEN_KEY = "garth_token"
+TOKEN_PREFIX = "token/"
 SETTINGS_KEY = "settings.json"
 
 
@@ -38,16 +38,42 @@ def _settings_path() -> str:
     return os.path.join(os.environ["HAKIGAINS_DATA_DIR"], SETTINGS_KEY)
 
 
-def _sync_down(bucket: str, key: str, local: str) -> None:
+def _put_bytes(bucket: str, key: str, local: str) -> None:
+    # Upload as bytes (files are tiny). Avoids botocore's UnseekableStreamError
+    # from upload_file + default checksum streaming.
+    if os.path.isfile(local):
+        with open(local, "rb") as f:
+            boto3.client("s3").put_object(Bucket=bucket, Key=key, Body=f.read())
+
+
+def _get_bytes(bucket: str, key: str, local: str) -> None:
     try:
-        boto3.client("s3").download_file(bucket, key, local)
+        body = boto3.client("s3").get_object(Bucket=bucket, Key=key)["Body"].read()
     except Exception:
-        pass  # first run — nothing stored yet
+        return  # first run — nothing stored yet
+    os.makedirs(os.path.dirname(local) or ".", exist_ok=True)
+    with open(local, "wb") as f:
+        f.write(body)
 
 
-def _sync_up(bucket: str, key: str, local: str) -> None:
-    if os.path.exists(local):
-        boto3.client("s3").upload_file(local, bucket, key)
+def _put_dir(bucket: str, prefix: str, local_dir: str) -> None:
+    """garth stores its token as a DIRECTORY of json files — sync each file."""
+    if not os.path.isdir(local_dir):
+        return
+    for name in os.listdir(local_dir):
+        _put_bytes(bucket, prefix + name, os.path.join(local_dir, name))
+
+
+def _get_dir(bucket: str, prefix: str, local_dir: str) -> None:
+    os.makedirs(local_dir, exist_ok=True)
+    try:
+        listing = boto3.client("s3").list_objects_v2(Bucket=bucket, Prefix=prefix)
+    except Exception:
+        return
+    for obj in listing.get("Contents", []):
+        name = obj["Key"][len(prefix):]
+        if name:
+            _get_bytes(bucket, obj["Key"], os.path.join(local_dir, name))
 
 
 def _bootstrap() -> None:
@@ -60,8 +86,8 @@ def _bootstrap() -> None:
     os.makedirs(os.environ["HAKIGAINS_DATA_DIR"], exist_ok=True)
     bucket = os.environ.get("HAKIGAINS_STATE_BUCKET")
     if bucket:
-        _sync_down(bucket, TOKEN_KEY, os.environ["HAKIGAINS_TOKEN_PATH"])
-        _sync_down(bucket, SETTINGS_KEY, _settings_path())
+        _get_dir(bucket, TOKEN_PREFIX, os.environ["HAKIGAINS_TOKEN_PATH"])
+        _get_bytes(bucket, SETTINGS_KEY, _settings_path())
     _BOOTSTRAPPED = True
 
 
@@ -69,8 +95,8 @@ def _persist_state() -> None:
     bucket = os.environ.get("HAKIGAINS_STATE_BUCKET")
     if not bucket:
         return
-    _sync_up(bucket, TOKEN_KEY, os.environ["HAKIGAINS_TOKEN_PATH"])
-    _sync_up(bucket, SETTINGS_KEY, _settings_path())
+    _put_dir(bucket, TOKEN_PREFIX, os.environ["HAKIGAINS_TOKEN_PATH"])
+    _put_bytes(bucket, SETTINGS_KEY, _settings_path())
 
 
 def _client():

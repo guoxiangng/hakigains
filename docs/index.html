@@ -1,0 +1,379 @@
+<style>
+  :root{
+    --ground:#08171f; --ground-2:#0d2430; --panel:#102a37;
+    --ink:#f3ead2; --muted:#9db1b9; --faint:#6f8894;
+    --gold:#e6b24d; --gold-2:#f2cd7e; --crimson:#d94b3d; --haki:#8a6bff;
+    --teal:#46c6b4; --line:rgba(230,178,77,.24); --line-soft:rgba(243,234,210,.10);
+    --shadow:0 24px 60px -28px rgba(0,0,0,.75);
+    --serif:"Copperplate","Palatino Linotype","Book Antiqua","Georgia",serif;
+    --display:"Georgia","Times New Roman",serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:"SFMono-Regular","Consolas","Liberation Mono",monospace;
+    --tg-bg:#0e1621; --tg-bubble:#182533; --tg-accent:#3a9bdc;
+  }
+  @media (prefers-color-scheme:light){
+    :root{
+      --ground:#e7d9b8; --ground-2:#efe4c8; --panel:#f5ecd4;
+      --ink:#2a1d10; --muted:#6a5940; --faint:#8a795e;
+      --gold:#a9701f; --gold-2:#8c5c17; --crimson:#b0362a; --haki:#5e3fc0; --teal:#1c8877;
+      --line:rgba(42,29,16,.26); --line-soft:rgba(42,29,16,.12);
+      --shadow:0 20px 44px -26px rgba(74,54,24,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#08171f; --ground-2:#0d2430; --panel:#102a37;
+    --ink:#f3ead2; --muted:#9db1b9; --faint:#6f8894;
+    --gold:#e6b24d; --gold-2:#f2cd7e; --crimson:#d94b3d; --haki:#8a6bff; --teal:#46c6b4;
+    --line:rgba(230,178,77,.24); --line-soft:rgba(243,234,210,.10);
+    --shadow:0 24px 60px -28px rgba(0,0,0,.75);
+  }
+  :root[data-theme="light"]{
+    --ground:#e7d9b8; --ground-2:#efe4c8; --panel:#f5ecd4;
+    --ink:#2a1d10; --muted:#6a5940; --faint:#8a795e;
+    --gold:#a9701f; --gold-2:#8c5c17; --crimson:#b0362a; --haki:#5e3fc0; --teal:#1c8877;
+    --line:rgba(42,29,16,.26); --line-soft:rgba(42,29,16,.12);
+    --shadow:0 20px 44px -26px rgba(74,54,24,.5);
+  }
+
+  *{box-sizing:border-box}
+  .page{
+    font-family:var(--body); color:var(--ink);
+    background:
+      radial-gradient(120% 60% at 50% -10%, rgba(138,107,255,.08), transparent 55%),
+      var(--ground);
+    line-height:1.65; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    padding:0 20px 70px;
+  }
+  .wrap{max-width:920px;margin:0 auto}
+  a{color:var(--gold)}
+  .mono{font-family:var(--mono)}
+  h2{font-family:var(--display);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:0}
+  .eyebrow{font-family:var(--serif);text-transform:uppercase;letter-spacing:.24em;
+    font-size:11px;color:var(--gold);font-weight:700}
+
+  /* nav */
+  .nav{max-width:920px;margin:0 auto;display:flex;justify-content:space-between;
+    align-items:center;padding:20px 4px;gap:12px;flex-wrap:wrap}
+  .nav .brand{font-family:var(--serif);letter-spacing:.14em;text-transform:uppercase;
+    font-size:12px;color:var(--muted)}
+  .nav .brand b{color:var(--ink)}
+  .nav .links{display:flex;gap:18px;font-size:13px}
+  .nav .links a{color:var(--muted);text-decoration:none;border-bottom:1px solid transparent}
+  .nav .links a:hover{color:var(--gold);border-color:var(--gold)}
+  .nav .links a.cta{color:var(--ground);background:var(--gold);padding:7px 14px;
+    border-radius:7px;font-weight:700}
+
+  /* hero */
+  .hero{padding:44px 0 8px;text-align:center}
+  .crest{width:64px;height:64px;margin:0 auto 18px;color:var(--gold);opacity:.9}
+  .hero h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5.6vw,46px);
+    letter-spacing:-.01em;line-height:1.1;margin:0 0 16px;text-wrap:balance}
+  .hero h1 em{font-style:normal;color:var(--gold)}
+  .hero .dek{max-width:62ch;margin:0 auto;color:var(--muted);font-size:17.5px}
+  .hero-cta{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+  .btn{font-family:var(--serif);text-transform:uppercase;letter-spacing:.12em;font-size:12px;
+    font-weight:700;padding:12px 22px;border-radius:8px;text-decoration:none;border:1px solid var(--line)}
+  .btn.primary{background:var(--gold);color:var(--ground);border-color:var(--gold)}
+  .btn.ghost{color:var(--ink)}
+  .meta-row{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:30px;
+    color:var(--faint);font-size:12.5px}
+  .meta-row b{color:var(--muted);font-weight:600}
+
+  section{margin-top:68px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+  .sec-head h2{font-size:clamp(21px,3.2vw,27px)}
+  .lede{color:var(--muted);max-width:66ch;font-size:16px}
+
+  /* problem / approach */
+  .prose{max-width:70ch}
+  .prose p{color:var(--muted);font-size:16px;margin:0 0 14px}
+  .prose p:last-child{margin-bottom:0}
+  .prose strong{color:var(--ink)}
+
+  .decisions{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px}
+  .decision{display:grid;grid-template-columns:200px 1fr;gap:20px;padding:18px 0;
+    border-top:1px dashed var(--line-soft)}
+  .decision:last-child{border-bottom:1px dashed var(--line-soft)}
+  .decision .d-label{font-family:var(--serif);text-transform:uppercase;letter-spacing:.1em;
+    font-size:12px;color:var(--gold);font-weight:700;line-height:1.5}
+  .decision p{margin:0;color:var(--muted);font-size:15px}
+  .decision strong{color:var(--ink)}
+
+  /* phone mockups */
+  .phones{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
+  .phone{background:var(--tg-bg);border-radius:26px;border:6px solid var(--panel);
+    box-shadow:var(--shadow);overflow:hidden}
+  .phone .tg-head{display:flex;align-items:center;gap:10px;padding:12px 14px;
+    background:var(--ground-2);border-bottom:1px solid var(--line-soft)}
+  .tg-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--crimson));
+    display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+  .tg-name{font-size:14px;font-weight:600;color:var(--ink)}
+  .tg-sub{font-size:11px;color:var(--teal)}
+  .tg-body{padding:16px 12px;min-height:340px;display:flex;flex-direction:column;
+    justify-content:flex-end;gap:8px}
+  .bubble{background:var(--tg-bubble);border-radius:14px;border-bottom-left-radius:4px;
+    padding:11px 13px;font-size:13px;color:#e7edf3;max-width:92%;line-height:1.55}
+  .bubble.me{align-self:flex-end;background:var(--tg-accent);border-radius:14px;
+    border-bottom-right-radius:4px;color:#fff;max-width:70%}
+  .bubble b{color:var(--gold-2);display:block;margin:8px 0 2px;font-size:12.5px}
+  .bubble b:first-child{margin-top:0}
+  .bubble .time{display:block;text-align:right;font-size:10px;opacity:.55;margin-top:6px}
+  .caption{text-align:center;font-size:12px;color:var(--faint);margin-top:10px;
+    font-family:var(--serif);text-transform:uppercase;letter-spacing:.1em}
+
+  /* architecture */
+  .route{background:linear-gradient(180deg,var(--panel),var(--ground-2));
+    border:1px solid var(--line);border-radius:14px;padding:22px;overflow-x:auto}
+  .route pre{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--ink);white-space:pre}
+  .route .g{color:var(--gold)} .route .h{color:var(--haki)} .route .t{color:var(--teal)} .route .m{color:var(--faint)}
+
+  /* stack chips */
+  .crew{display:flex;flex-wrap:wrap;gap:10px}
+  .flag{display:inline-flex;align-items:center;gap:8px;background:var(--ground-2);
+    border:1px solid var(--line);border-radius:10px;padding:8px 13px;font-size:13.5px}
+  .flag .fx{font-family:var(--serif);color:var(--gold);font-size:12px}
+
+  /* status */
+  .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .status-col h3{font-family:var(--serif);text-transform:uppercase;letter-spacing:.14em;
+    font-size:12px;font-weight:700;margin:0 0 12px}
+  .status-col.done h3{color:var(--teal)}
+  .status-col.next h3{color:var(--haki)}
+  .status-item{display:flex;gap:9px;align-items:flex-start;padding:8px 0;font-size:14px;
+    color:var(--muted);border-top:1px dashed var(--line-soft)}
+  .status-item:first-of-type{border-top:none}
+  .status-item .mk{flex:none;margin-top:2px;font-size:12px}
+  .status-col.done .mk{color:var(--teal)}
+  .status-col.next .mk{color:var(--faint)}
+  .status-item strong{color:var(--ink)}
+
+  /* final cta */
+  .final{background:radial-gradient(120% 140% at 0% 0%, rgba(138,107,255,.10), transparent 55%),
+    var(--ground-2);border:1px solid var(--line);border-radius:16px;padding:34px 30px;text-align:center}
+  .final h2{font-size:clamp(20px,3vw,26px);margin-bottom:10px}
+  .final p{color:var(--muted);max-width:56ch;margin:0 auto 22px;font-size:15.5px}
+  .final .btn.primary{padding:13px 26px}
+
+  footer{max-width:920px;margin:64px auto 0;padding-top:20px;border-top:1px solid var(--line);
+    color:var(--faint);font-size:12px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+  @media (max-width:720px){
+    .decision{grid-template-columns:1fr;gap:6px}
+    .phones{grid-template-columns:1fr}
+    .status-grid{grid-template-columns:1fr}
+  }
+</style>
+
+<div class="nav">
+  <div class="brand"><b>hakigains</b> · case study</div>
+  <div class="links">
+    <a href="brochure.html">the poster</a>
+    <a href="#demo">demo</a>
+    <a href="https://github.com/YOUR-USERNAME/hakigains" class="cta">View source ↗</a>
+  </div>
+</div>
+
+<div class="page">
+  <div class="wrap">
+
+    <div class="hero">
+      <svg class="crest" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+        <g stroke="currentColor" stroke-width="6" stroke-linecap="round">
+          <g transform="rotate(38 60 60)"><line x1="26" y1="60" x2="94" y2="60"/></g>
+          <g transform="rotate(-38 60 60)"><line x1="26" y1="60" x2="94" y2="60"/></g>
+        </g>
+        <path d="M60 24c-19 0-32 13-32 31 0 11 5 17 11 21 2 1 3 3 3 6v4c0 2 2 4 4 4h28c2 0 4-2 4-4v-4c0-3 1-5 3-6 6-4 11-10 11-21 0-18-13-31-32-31Z" fill="currentColor"/>
+      </svg>
+      <div class="eyebrow">Self-hosted · personal project</div>
+      <h1>An AI training coach that reads<br><em>your body's Haki.</em></h1>
+      <p class="dek">hakigains reads my Garmin recovery data every morning, reasons over the
+      trend against my own goals, cross-checks Garmin's own readiness verdict, and sends me
+      one specific session over Telegram — with a rationale, not a label.</p>
+      <div class="hero-cta">
+        <a class="btn primary" href="https://github.com/YOUR-USERNAME/hakigains">View the code</a>
+        <a class="btn ghost" href="#demo">See it in action</a>
+      </div>
+      <div class="meta-row">
+        <span><b>Stack</b> Python · Azure/Bedrock LLM · Telegram · AWS Lambda</span>
+        <span><b>Status</b> live, self-hosted, running daily</span>
+        <span><b>Built</b> solo, July 2026</span>
+      </div>
+    </div>
+
+    <!-- PROBLEM -->
+    <section>
+      <div class="sec-head"><span class="eyebrow">The problem</span></div>
+      <div class="prose">
+        <p>I train almost every day and have access to a gym, a pool, running routes, and a
+        huge library of saved Garmin workouts — but every morning I still had to decide, from
+        scratch, what today's session should actually be. Garmin's own "training status" widget
+        gives a label; it doesn't reason about my week, my goals, or the fact that I saw a
+        physio yesterday.</p>
+        <p>I didn't want a rules engine (<span class="mono">if readiness &lt; 30: rest</span>)
+        — that can't weigh trade-offs the way a real coach does. I wanted an AI layer that reads
+        the same data a coach would, and tells me what to do about it, in plain language, with
+        a reason I can push back on.</p>
+      </div>
+    </section>
+
+    <!-- APPROACH -->
+    <section>
+      <div class="sec-head"><span class="eyebrow">Design decisions</span><h2>Why it's built this way</h2></div>
+      <div class="decisions">
+        <div class="decision">
+          <div class="d-label">Self-hosted, not a service</div>
+          <p><strong>No central server ever holds your Garmin password.</strong> There's no
+          public Garmin API for personal use, so the only path is a login-based library — and I
+          wasn't willing to build a hosted product that stores other people's credentials. Each
+          user runs their own copy, with their own bot, on their own AWS account.</p>
+        </div>
+        <div class="decision">
+          <div class="d-label">Second opinion, not a verdict</div>
+          <p>Garmin already computes its own training-readiness score. hakigains forms its
+          <strong>own</strong> recommendation first, then explicitly reconciles with Garmin's —
+          agreeing, or naming the disagreement and why. Two coaches you can compare, not one
+          black box.</p>
+        </div>
+        <div class="decision">
+          <div class="d-label">Profile you own, not a prompt you edit</div>
+          <p>Goals, preferred activities, and constraints live in a plain-language
+          <strong><span class="mono">config.yaml</span></strong> — free-form sections, your own
+          words. The coaching logic never hardcodes anyone's specific situation; runtime dials
+          (<span class="mono">intensity_bias</span>, trend window) are changeable live, from the
+          bot itself.</p>
+        </div>
+        <div class="decision">
+          <div class="d-label">A workflow, not an agent</div>
+          <p>The daily briefing is a deterministic pipeline with one LLM reasoning step —
+          predictable, cheap, easy to debug. Only the <strong>interactive</strong> side (asking
+          it questions) behaves agent-like, and it's hard-gated to my own Telegram chat ID;
+          strangers can message the bot, but it never touches my data.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEMO -->
+    <section id="demo">
+      <div class="sec-head"><span class="eyebrow">In action</span><h2>What it actually sends</h2></div>
+      <p class="lede">Not a live public demo — this is self-hosted, so there's nothing to click.
+      Below is real output from the running bot, reconstructed as it appears in Telegram.</p>
+      <div class="phones">
+        <div>
+          <div class="phone">
+            <div class="tg-head">
+              <div class="tg-avatar">🏴‍☠️</div>
+              <div><div class="tg-name">hakigains</div><div class="tg-sub">bot</div></div>
+            </div>
+            <div class="tg-body">
+              <div class="bubble">
+                <b>🏋️ ACTIVITY RECOMMENDATION</b>
+                45 min easy Zone 2 bike: 10 min very easy warm-up, then 25 min steady
+                conversational spin, finish with 10 min easy cooldown.
+                <b>📊 WHY</b>
+                Readiness is low at 30, but HRV is balanced and resting HR is right on its
+                7-day average — not a red-light day. Load balance says AEROBIC_LOW_FOCUS, so
+                easy aerobic volume is the highest-value session today.
+                <b>🤖 GARMIN CHECK</b>
+                Mostly agree with Garmin's LOW score and focus-on-sleep-quality call.
+                <b>⚠️ WATCH-OUTS</b>
+                Keep it low impact — don't chase pace or watts today.
+                <span class="time">07:02</span>
+              </div>
+            </div>
+          </div>
+          <div class="caption">the scheduled morning briefing</div>
+        </div>
+        <div>
+          <div class="phone">
+            <div class="tg-head">
+              <div class="tg-avatar">🏴‍☠️</div>
+              <div><div class="tg-name">hakigains</div><div class="tg-sub">bot</div></div>
+            </div>
+            <div class="tg-body">
+              <div class="bubble me">/set intensity_bias aggressive<span class="time">21:14</span></div>
+              <div class="bubble">Set intensity_bias = aggressive<span class="time">21:14</span></div>
+              <div class="bubble me">what should I do for my hiking goal this week?<span class="time">21:15</span></div>
+              <div class="bubble">
+                Given your legs got 2 strength sessions this week and readiness has been
+                trending up the last 3 days, I'd add one longer hike-specific session — 60–75
+                min with a loaded pack, or stairs/incline treadmill if you can't get outdoors.
+                It's a good week to push this since recovery is on your side.
+                <span class="time">21:15</span>
+              </div>
+            </div>
+          </div>
+          <div class="caption">the interactive bot — gated to my chat only</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section>
+      <div class="sec-head"><span class="eyebrow">Architecture</span><h2>One core, two entry points</h2></div>
+      <p class="lede">The same gated logic runs the scheduled cron and the live bot, so neither
+      can accidentally skip the security gate.</p>
+      <div class="route">
+<pre><span class="g">EventBridge (daily)</span>  ─►  ingest ─► reason ─► <span class="t">deliver → Telegram</span>
+<span class="h">Telegram webhook</span>     ─►  bot/core <span class="m">(chat-ID gated)</span> ─► /brief · /set · Q&amp;A
+
+<span class="m">secrets</span>  AWS Secrets Manager — Garmin creds · LLM key · bot token
+<span class="m">state</span>    S3 — Garmin auth token + settings, synced across cold starts
+<span class="m">brain</span>    LLM behind a provider interface — Azure OpenAI today, Bedrock/Claude next
+<span class="m">deploy</span>   AWS SAM · container-image Lambda · ap-southeast-1</pre>
+      </div>
+    </section>
+
+    <!-- STACK -->
+    <section>
+      <div class="sec-head"><span class="eyebrow">Stack</span></div>
+      <div class="crew">
+        <span class="flag"><span class="fx">◈</span>Python 3.12</span>
+        <span class="flag"><span class="fx">◈</span>garminconnect</span>
+        <span class="flag"><span class="fx">◈</span>Azure OpenAI → Bedrock</span>
+        <span class="flag"><span class="fx">◈</span>Telegram Bot API</span>
+        <span class="flag"><span class="fx">◈</span>AWS Lambda + EventBridge</span>
+        <span class="flag"><span class="fx">◈</span>Secrets Manager · S3</span>
+        <span class="flag"><span class="fx">◈</span>AWS SAM</span>
+      </div>
+    </section>
+
+    <!-- STATUS -->
+    <section>
+      <div class="sec-head"><span class="eyebrow">Honest status</span><h2>Built vs. still charting</h2></div>
+      <div class="status-grid">
+        <div class="status-col done">
+          <h3>Shipped</h3>
+          <div class="status-item"><span class="mk">✓</span><span>Garmin ingest + 7-day readiness trend</span></div>
+          <div class="status-item"><span class="mk">✓</span><span>AI reasoning + Garmin second-opinion reconciliation</span></div>
+          <div class="status-item"><span class="mk">✓</span><span>Modality normalization (treadmill + outdoor = one "run")</span></div>
+          <div class="status-item"><span class="mk">✓</span><span>Gated interactive Telegram bot</span></div>
+          <div class="status-item"><span class="mk">✓</span><span>Config-owned profile + live-tunable knobs</span></div>
+          <div class="status-item"><span class="mk">✓</span><span>Deployed serverless on AWS (Lambda + EventBridge)</span></div>
+        </div>
+        <div class="status-col next">
+          <h3>Not yet</h3>
+          <div class="status-item"><span class="mk">○</span><span>Calendar as a hard constraint (today: soft profile notes only)</span></div>
+          <div class="status-item"><span class="mk">○</span><span>Feedback loop — planned vs. actual vs. how it felt</span></div>
+          <div class="status-item"><span class="mk">○</span><span>Map a recommendation to a real saved Garmin workout</span></div>
+          <div class="status-item"><span class="mk">○</span><span>Bedrock/Claude provider (closing the last data egress)</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section>
+      <div class="final">
+        <h2>Read the code, or run your own.</h2>
+        <p>It's self-hosted by design — your Garmin credentials never leave your machine or
+        your own AWS account. Full source, setup guide, and design notes are on GitHub.</p>
+        <a class="btn primary" href="https://github.com/YOUR-USERNAME/hakigains">github.com/YOUR-USERNAME/hakigains</a>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <span>hakigains — a personal project, self-hosted by design.</span>
+    <span>One Piece–flavored homage · not affiliated with Eiichiro Oda or Shueisha.</span>
+  </footer>
+</div>

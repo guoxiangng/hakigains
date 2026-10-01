@@ -77,16 +77,24 @@ def handle(text: str, client, llm, config: Config) -> tuple[str, str | None]:
             records=memory.recall(text), turns=memory.turns(today)
         )
     reply = answer(text, _summary(client, config, today), llm, config, context)
-    memory.save_turns(today, [("USER", text), ("ASSISTANT", reply)])
+    # Long-term facts come only from what the athlete says. The reply quotes the
+    # day's Garmin numbers, which would otherwise be extracted as "facts".
+    memory.save_turns(today, [("USER", text)])
+    memory.save_turns(today, [("ASSISTANT", reply)], extract=False)
     return _telegram_html(reply), "HTML"
 
 
+# **bold** or *bold* (the model uses either; briefings in its context use the latter).
+# The single-star form must hug its text, so "5 * 4" is left alone.
+_BOLD = re.compile(r"\*\*(.+?)\*\*|(?<![\w*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\w*])")
+
+
 def _telegram_html(text: str) -> str:
-    """Free-form answers come back with **bold**. Telegram's HTML mode renders
-    that and, unlike its Markdown mode, isn't tripped by the underscores in
-    Garmin labels (AEROBIC_LOW_FOCUS)."""
+    """Render the model's bold markers for Telegram. HTML mode is used because,
+    unlike Markdown mode, it isn't tripped by the underscores in Garmin labels
+    (AEROBIC_LOW_FOCUS)."""
     escaped = html.escape(text, quote=False)
-    return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", escaped)
+    return _BOLD.sub(lambda m: f"<b>{m.group(1) or m.group(2)}</b>", escaped)
 
 
 def _show_memory(memory) -> str:

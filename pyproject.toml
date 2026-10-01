@@ -9,11 +9,14 @@ description = "An AI training coach over Garmin data, delivered via Telegram."
 requires-python = ">=3.11"
 dependencies = [
     "garminconnect",
-    "openai",
+    "anthropic[bedrock]",
     "requests",
     "python-dotenv",
     "PyYAML",
 ]
+
+[project.optional-dependencies]
+azure = ["openai"]  # legacy Azure OpenAI provider
 
 [tool.setuptools.packages.find]
 where = ["src"]

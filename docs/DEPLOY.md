@@ -2,7 +2,7 @@
 
 Runs hakigains serverless: a **scheduled briefing** (EventBridge → Lambda) and an
 **interactive bot** (Telegram webhook → Lambda Function URL). Both use a container image
-(garminconnect + openai deps are too chunky for a clean zip) and share the same code as the
+(garminconnect + anthropic deps are too chunky for a clean zip) and share the same code as the
 local scripts. Target region: **ap-southeast-1**.
 
 > Status: scaffolding. The template + handler are written to be deployable but should be
@@ -19,10 +19,6 @@ aws secretsmanager create-secret --name hakigains/prod --region ap-southeast-1 \
   --secret-string '{
     "GARMIN_EMAIL": "...",
     "GARMIN_PASSWORD": "...",
-    "AZURE_OPENAI_API_KEY": "...",
-    "AZURE_OPENAI_ENDPOINT": "https://....openai.azure.com/",
-    "AZURE_OPENAI_API_VERSION": "2024-12-01-preview",
-    "AZURE_OPENAI_CHAT_DEPLOYMENT_NAME": "...",
     "TELEGRAM_BOT_TOKEN": "..."
   }'
 ```
@@ -55,9 +51,10 @@ the same way, so knob changes persist across cold starts.
 - 2× Lambda (image): `ScheduledBriefingFunction` (EventBridge schedule, default 07:00 SGT)
   and `WebhookFunction` (Function URL, `AuthType: NONE` — the chat-ID gate is the guard).
 - `StateBucket` (S3, all public access blocked) for the Garmin token + settings.
-- IAM scoped to: read the one secret, read/write the state bucket.
+- IAM scoped to: read the one secret, read/write the state bucket, invoke Claude on Bedrock.
 
-## Switching the LLM to Bedrock later
-The provider abstraction (`src/hakigains/llm/`) means moving off the temporary Azure key to
-**Bedrock/Claude in this account** is a new `llm/` implementation + an IAM `bedrock:InvokeModel`
-grant — closing the external egress. Set `LLM_PROVIDER=bedrock` once implemented.
+## LLM: Claude on Bedrock
+The coaching call goes to **Claude on Amazon Bedrock in this account** (`llm/bedrock.py`), so
+there are no LLM keys to store — the Lambda role is granted `bedrock:InvokeModel`. Pick the
+model with the `BedrockModelId` parameter (a `global.` inference profile, e.g.
+`global.anthropic.claude-sonnet-5-5`); `BedrockFallbackModelId` is retried once on a refusal.

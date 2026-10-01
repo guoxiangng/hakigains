@@ -5,12 +5,16 @@ from .base import LLMProvider
 
 
 def get_provider() -> LLMProvider:
-    provider = os.environ.get("LLM_PROVIDER", "azure_openai").lower()
+    provider = os.environ.get("LLM_PROVIDER", "bedrock").lower()
+
+    if provider == "bedrock":
+        from .bedrock import BedrockClaudeProvider
+
+        return BedrockClaudeProvider()
 
     if provider == "azure_openai":
         from .azure_openai import AzureOpenAIProvider
 
         return AzureOpenAIProvider()
 
-    # Future: "bedrock" -> BedrockClaudeProvider (own AWS account, no egress)
     raise ValueError(f"Unknown LLM_PROVIDER: {provider!r}")

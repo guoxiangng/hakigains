@@ -30,7 +30,7 @@ cp config.example.yaml config.yaml    # your profile + default knobs
 ```
 - **Telegram bot:** create one via @BotFather (`/newbot`), put the token in `.env`, then
   message your new bot once and run `python scripts/telegram_setup.py` to capture your chat ID.
-- **LLM:** set `LLM_PROVIDER` + provider keys in `.env` (Azure OpenAI supported today).
+- **LLM:** Claude on Amazon Bedrock by default (uses your AWS credentials; see `.env.example` for model overrides).
 
 ### 3. Run
 ```bash

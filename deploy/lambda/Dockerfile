@@ -1,4 +1,4 @@
-# Container image for both Lambda functions (garminconnect + openai deps are
+# Container image for both Lambda functions (garminconnect + anthropic deps are
 # chunky, so a container beats a zip). The handler is selected per-function by
 # SAM (handler.scheduled_briefing / handler.telegram_webhook).
 FROM public.ecr.aws/lambda/python:3.12

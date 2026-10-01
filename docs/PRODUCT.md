@@ -77,7 +77,6 @@ These are **explicitly not in the current build**:
   doesn't).
 - **Evaluation** — tracking bot-rec vs Garmin-rec vs outcome over time. *Not built.*
 - **Weather / facility awareness, second sport-specific models.** *Not built.*
-- **Bedrock/Claude provider** — the LLM abstraction exists; only Azure OpenAI is implemented today.
 
 ## 5. Is it an "agent"?
 
@@ -118,7 +117,7 @@ treat as medical-record sensitive.
 
    Config:  profile (config.yaml, file) + knobs (data/settings.json, via /set)
    Secrets: Garmin creds, LLM key, Telegram token — never in the repo
-   LLM:     provider abstraction — Azure OpenAI now, Bedrock/Claude later
+   LLM:     provider abstraction — Claude on Bedrock (own AWS account)
 ```
 
 **Package (`src/hakigains/`):** `config` · `garmin_client` · `ingest` · `reason` · `deliver` ·
@@ -145,9 +144,8 @@ long-poll listener and the Lambda webhook — so neither can skip the gate.
   hold — so self-host is the path.)
 - **Garmin: read-only** in practice (login is the only write).
 - **One external egress to name honestly:** the reasoning step sends a *summarized* readiness
-  picture to the LLM provider. On Azure OpenAI that data leaves your control; moving the provider
-  to **Bedrock/Claude in your own AWS account** would close that egress. Send a clean summary, not
-  raw exhaustive data.
+  picture to the LLM provider. With **Bedrock/Claude in your own AWS account** (the default) that
+  call stays inside your AWS boundary. Send a clean summary, not raw exhaustive data.
 
 ## 10. Roadmap
 

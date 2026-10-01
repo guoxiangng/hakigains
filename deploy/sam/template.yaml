@@ -21,6 +21,10 @@ Parameters:
     Type: String
     Default: global.anthropic.claude-opus-4-8
     Description: Retried once if the primary model refuses.
+  MemoryExtractionModelId:
+    Type: String
+    Default: global.anthropic.claude-sonnet-5-5
+    Description: Model that decides what goes into coach memory (runs in this account).
   Timezone:
     Type: String
     Default: Asia/Singapore
@@ -54,19 +58,69 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
+  # Lets AgentCore Memory call the extraction model in this account.
+  MemoryExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: bedrock-agentcore.amazonaws.com }
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals: { "aws:SourceAccount": !Ref "AWS::AccountId" }
+              ArnLike: { "aws:SourceArn": !Sub "arn:aws:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:*" }
+      Policies:
+        - PolicyName: invoke-extraction-model
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
+                Resource:
+                  - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/global.anthropic.claude-*"
+                  - "arn:aws:bedrock:*::foundation-model/anthropic.claude-*"
+                  - "arn:aws:bedrock:::foundation-model/anthropic.claude-*"
+
   # Coach memory: chat turns are stored as events; AgentCore extracts dated facts
   # from them in the background, and the coach searches those before each reply.
+  # The extraction prompt below is the policy for WHAT is worth remembering.
   CoachMemory:
     Type: AWS::BedrockAgentCore::Memory
     Properties:
       Name: hakigains
       Description: hakigains coach memory - chat turns plus facts extracted from them.
       EventExpiryDuration: 90     # days raw chat turns are kept; extracted facts persist
+      MemoryExecutionRoleArn: !GetAtt MemoryExecutionRole.Arn
       MemoryStrategies:
-        - SemanticMemoryStrategy:
-            Name: Facts
+        - CustomMemoryStrategy:
+            Name: CoachFacts
             NamespaceTemplates:
               - "/athlete/{actorId}/facts/"
+            Configuration:
+              SemanticOverride:
+                Extraction:
+                  ModelId: !Ref MemoryExtractionModelId
+                  AppendToPrompt: |
+                    This memory belongs to a training coach and holds what one athlete has told the coach in conversation. The athlete's wearable data is fetched fresh every day, so it must never be stored here.
+
+                    Extract ONLY things the athlete (the USER) stated, or a plan the coach proposed that the athlete explicitly accepted. Keep a fact only if it fits one of these categories, and begin the fact with its tag:
+                    [body] injury, pain, soreness, illness, or advice from a physio or doctor.
+                    [schedule] travel, appointments, or limits on time, place or equipment.
+                    [felt] how a session or the athlete's body felt.
+                    [preference] training likes and dislikes.
+                    [goal] goals, events and their dates.
+                    [plan] a plan or restriction the athlete asked for or agreed with the coach (for example "no running this week" or "deload next week").
+                    [skipped] a session the athlete skipped and the reason.
+
+                    Never extract any of the following, even when the coach states them: readiness, HRV, sleep, heart rate, training load, recovery time, Body Battery or any other wearable metric; logs of completed activities; the coach's analysis, explanations or suggestions that the athlete did not explicitly accept; the athlete's questions.
+
+                    Restrictions matter most: when the athlete asks to avoid or limit something, always record it as its own [plan] fact, separate from the reason for it.
+
+                    Dates: the conversation takes place on the date of its messages. Convert every relative time to absolute dates counted from that date. "This week" ends on the coming Sunday. "Next week" runs from the following Monday to the Sunday after it. "For N days" from a start date ends N days later. Every time-limited fact must end with "until YYYY-MM-DD".
+
+                    If nothing in an exchange fits a category, extract nothing.
 
   ScheduledBriefingFunction:
     Type: AWS::Serverless::Function

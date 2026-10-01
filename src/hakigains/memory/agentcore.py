@@ -4,16 +4,21 @@ Every chat exchange is written as a raw *event*; AgentCore then extracts
 long-term *memory records* (dated facts) from those events in the
 background, and we search the records before building each prompt.
 
+What gets extracted is decided by a custom extraction prompt on the memory's
+strategy (see deploy/sam/template.yaml): only what the athlete said or agreed
+to, never wearable numbers. The athlete's turns are stamped with their date so
+the extractor can turn "next week" into absolute dates.
+
 Briefings are saved with extraction skipped: they are useful as conversational
-context ("why not a run?") but are full of daily numbers that would otherwise be
-extracted as junk "facts".
+context ("why not a run?") but nothing in them was said by the athlete.
 
 A memory failure must never take the coach down, so every call degrades to
 "no memory" and logs instead of raising.
 """
 import json
 import os
-from datetime import datetime, timezone
+import re
+from datetime import date, datetime, timezone
 
 import boto3
 
@@ -23,6 +28,13 @@ from .base import Record, Turn
 # and dislikes, and running the preference strategy beside it just duplicated them.
 KINDS = {"facts": "fact"}
 MAX_EVENT_TEXT = 9000  # conversational payload text limit headroom
+_STAMP = re.compile(r"^\[\w+ \d{4}-\d{2}-\d{2}\] ")
+
+
+def _stamp(day: str, role: str, text: str) -> str:
+    if role != "USER":
+        return text
+    return f"[{date.fromisoformat(day):%A} {day}] {text}"
 
 
 class AgentCoreMemory:
@@ -46,7 +58,8 @@ class AgentCoreMemory:
     # ---- short-term: raw events -------------------------------------------------
     def save_turns(self, day: str, turns: list[Turn], extract: bool = True) -> None:
         payload = [
-            {"conversational": {"role": role, "content": {"text": text[:MAX_EVENT_TEXT]}}}
+            {"conversational": {"role": role,
+                                "content": {"text": _stamp(day, role, text)[:MAX_EVENT_TEXT]}}}
             for role, text in turns
             if text
         ]
@@ -83,7 +96,7 @@ class AgentCoreMemory:
             for item in ev.get("payload", []):
                 conv = item.get("conversational")
                 if conv:
-                    out.append((conv["role"], conv["content"]["text"]))
+                    out.append((conv["role"], _STAMP.sub("", conv["content"]["text"])))
         return out[-limit:]
 
     # ---- long-term: extracted records -------------------------------------------

@@ -23,18 +23,31 @@ def briefing_context(day: str) -> str:
     memory = get_memory()
     if not memory.enabled:
         return ""
+    _prune_expired(memory, day)
     yesterday = (date.fromisoformat(day) - timedelta(days=1)).isoformat()
     briefs = [text for role, text in memory.turns(yesterday, limit=50) if role == "ASSISTANT"
               and "ACTIVITY RECOMMENDATION" in text]
     return build_memory_context(
-        records=memory.recall(BRIEFING_QUERY),
+        records=[r for r in memory.recall(BRIEFING_QUERY) if not r.expired(day)],
         yesterday_brief=briefs[-1] if briefs else None,
     )
 
 
+def _prune_expired(memory, day: str) -> None:
+    """Delete facts whose "until" date has passed, so a finished restriction
+    ("no running until Sunday") can't linger."""
+    for record in memory.records():
+        if record.expired(day):
+            try:
+                memory.forget(record)
+                print(f"[memory] expired: {record.text}")
+            except Exception as e:
+                print(f"[memory] could not expire a record: {e}")
+
+
 def save_briefing(day: str, briefing: str) -> None:
-    """Keep the briefing as conversational context only — its daily numbers must
-    not be extracted into long-term 'facts'."""
+    """Keep the briefing as conversational context only — nothing in it was said
+    by the athlete, so it is not mined for long-term facts."""
     get_memory().save_turns(day, [("ASSISTANT", briefing)], extract=False)
 
 

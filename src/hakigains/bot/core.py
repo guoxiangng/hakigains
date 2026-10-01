@@ -74,13 +74,13 @@ def handle(text: str, client, llm, config: Config) -> tuple[str, str | None]:
     context = ""
     if memory.enabled:
         context = build_memory_context(
-            records=memory.recall(text), turns=memory.turns(today)
+            records=[r for r in memory.recall(text) if not r.expired(today)],
+            turns=memory.turns(today),
         )
     reply = answer(text, _summary(client, config, today), llm, config, context)
-    # Long-term facts come only from what the athlete says. The reply quotes the
-    # day's Garmin numbers, which would otherwise be extracted as "facts".
-    memory.save_turns(today, [("USER", text)])
-    memory.save_turns(today, [("ASSISTANT", reply)], extract=False)
+    # Saved as one exchange so an agreed plan ("deload next week?" / "ok") can be
+    # extracted. The strategy's extraction prompt keeps the reply's numbers out.
+    memory.save_turns(today, [("USER", text), ("ASSISTANT", reply)])
     return _telegram_html(reply), "HTML"
 
 

@@ -9,6 +9,7 @@ Three jobs, whatever the backend:
 - keep what the athlete says -> `recall(query)` / `records()` / `forget(record)`
 - know its own advice       -> yesterday's briefing is just a saved turn
 """
+import re
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -22,6 +23,12 @@ class Record:
     text: str
     noted: str  # ISO date the memory was written — lets the coach judge staleness
     namespace: str = ""
+
+    def expired(self, today: str) -> bool:
+        """Time-limited facts end with "until YYYY-MM-DD" (the extraction prompt
+        requires it). Past that date the fact is dead."""
+        dates = re.findall(r"until (\d{4}-\d{2}-\d{2})", self.text)
+        return bool(dates) and dates[-1] < today
 
 
 class Memory(Protocol):

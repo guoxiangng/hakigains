@@ -59,7 +59,14 @@ the same way, so knob changes persist across cold starts.
 The template creates one **Amazon Bedrock AgentCore Memory** (`CoachMemory`). Each chat exchange
 is stored as an event; AgentCore extracts dated facts from them in the background ("left knee
 sore", "physio on Tuesday evenings"), and the coach searches those before every briefing and
-reply. Briefings are stored for same-day follow-ups but are not mined for facts. In the bot,
+reply. Briefings are stored for same-day follow-ups but are not mined for facts.
+
+**What is worth remembering** is set by the extraction prompt on the memory's strategy in
+`template.yaml`: only what you said or agreed to, tagged `[body]`, `[schedule]`, `[felt]`,
+`[preference]`, `[goal]`, `[plan]` or `[skipped]`. Garmin numbers are never stored, because they
+are pulled fresh each day. Time-limited facts end with `until YYYY-MM-DD` and are deleted by the
+next briefing once that date has passed. Extraction runs on `MemoryExtractionModelId` in your
+account (Claude Sonnet 5.5 by default). In the bot,
 `/memory` lists what is held and `/forget <number>` deletes one item. Raw chat turns expire
 after 90 days; extracted facts stay until you delete them. Memory is optional in the code: with
 `HAKIGAINS_MEMORY_ID` unset (the local default) the coach runs without it.

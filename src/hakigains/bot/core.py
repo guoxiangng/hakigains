@@ -1,6 +1,9 @@
 """Shared bot routing — used by BOTH the local long-poll listener and the Lambda
 webhook. The chat-ID gate lives here so neither entry point can forget it.
 """
+import html
+import re
+
 from hakigains.briefing import briefing_context, save_briefing
 from hakigains.config import Config, load_config, set_setting, today as today_iso
 from hakigains.deliver.telegram import send_message
@@ -75,7 +78,15 @@ def handle(text: str, client, llm, config: Config) -> tuple[str, str | None]:
         )
     reply = answer(text, _summary(client, config, today), llm, config, context)
     memory.save_turns(today, [("USER", text), ("ASSISTANT", reply)])
-    return reply, None
+    return _telegram_html(reply), "HTML"
+
+
+def _telegram_html(text: str) -> str:
+    """Free-form answers come back with **bold**. Telegram's HTML mode renders
+    that and, unlike its Markdown mode, isn't tripped by the underscores in
+    Garmin labels (AEROBIC_LOW_FOCUS)."""
+    escaped = html.escape(text, quote=False)
+    return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", escaped)
 
 
 def _show_memory(memory) -> str:

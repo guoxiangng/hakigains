@@ -14,7 +14,9 @@ runs from the repo locally and from a bundled image on Lambda.
 import json
 import os
 from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import yaml
 
@@ -36,6 +38,19 @@ KNOB_SPEC = {
     "trend_days": {"type": int, "min": 1, "max": 30},
     "intensity_bias": {"type": str, "choices": {"conservative", "balanced", "aggressive"}},
 }
+
+def today() -> str:
+    """Today's date (ISO) in the athlete's timezone.
+
+    Lambda runs in UTC, so a 07:00 SGT briefing fires at 23:00 UTC the day
+    before — plain date.today() would read yesterday's Garmin data. Set
+    HAKIGAINS_TZ (e.g. Asia/Singapore); unset falls back to the machine's zone.
+    """
+    tz = os.environ.get("HAKIGAINS_TZ")
+    if tz:
+        return datetime.now(ZoneInfo(tz)).date().isoformat()
+    return date.today().isoformat()
+
 
 @dataclass
 class Config:

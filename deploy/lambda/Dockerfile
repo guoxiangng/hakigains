@@ -3,9 +3,10 @@
 # SAM (handler.scheduled_briefing / handler.telegram_webhook).
 FROM public.ecr.aws/lambda/python:3.12
 
-# Deps (boto3 is present in the Lambda runtime, but pin it for local `sam` parity).
+# Deps (the runtime's bundled boto3 predates the AgentCore Memory API we use, so
+# requirements.txt pins a newer one).
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt boto3
+RUN pip install --no-cache-dir -r requirements.txt
 
 # App package (src/hakigains -> /var/task/hakigains) + handler + profile.
 COPY src/ ${LAMBDA_TASK_ROOT}/

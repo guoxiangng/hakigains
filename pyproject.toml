@@ -10,9 +10,11 @@ requires-python = ">=3.11"
 dependencies = [
     "garminconnect",
     "anthropic[bedrock]",
+    "boto3>=1.43.105",
     "requests",
     "python-dotenv",
     "PyYAML",
+    "tzdata",
 ]
 
 [project.optional-dependencies]

@@ -148,7 +148,7 @@
   /* ---------- two haki (how it works) ---------- */
   .duo{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
   /* ---------- feature highlights ---------- */
-  .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
   .form{background:linear-gradient(180deg,var(--panel),var(--ground-2));border:1px solid var(--line);
     border-radius:12px;padding:20px;position:relative;overflow:hidden}
   .form::after{content:"";position:absolute;inset:0 0 auto;height:3px;
@@ -191,6 +191,20 @@
     border:1px solid var(--line);border-radius:14px;padding:22px;overflow-x:auto}
   .route pre{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--ink);
     white-space:pre}
+  .arch{overflow-x:auto;margin-bottom:16px}
+  .arch svg{display:block;width:100%;min-width:700px;height:auto}
+  .arch text{font-family:var(--body);font-size:12.5px;fill:var(--ink)}
+  .arch .s{fill:var(--muted);font-size:11.5px} .arch .l{fill:var(--faint);font-size:11px}
+  .arch .lm{fill:var(--haki);font-size:11.5px;font-weight:600} .arch .tm{fill:var(--haki);font-weight:600}
+  .arch .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;fill:var(--gold)}
+  .arch .km{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;fill:var(--haki)}
+  .arch .num{font-family:var(--mono);fill:var(--faint)}
+  .arch .bx{fill:var(--ground-2);stroke:var(--line);stroke-width:1.2}
+  .arch .core{fill:var(--ground-2);stroke:var(--gold);stroke-width:1.4}
+  .arch .mem{fill:var(--ground-2);stroke:var(--haki);stroke-width:1.4}
+  .arch .in{fill:var(--panel);stroke:var(--haki);stroke-width:1}
+  .arch .ar{stroke:var(--faint);stroke-width:1.3;fill:none} .arch .arm{stroke:var(--haki);stroke-width:1.6;fill:none}
+  .arch .ah{fill:var(--faint)} .arch .ahm{fill:var(--haki)}
   .route .g{color:var(--gold)} .route .h{color:var(--haki)} .route .t{color:var(--teal)} .route .m{color:var(--faint)}
 
   /* ---------- status ---------- */
@@ -371,6 +385,13 @@
           or just chat about your training. Locked to your own chat ID.</p>
         </div>
         <div class="form">
+          <h3>Remembers what you tell it</h3>
+          <p>Say "left knee is sore, no running this week" once. It keeps that as a dated
+          fact, uses it in tomorrow's briefing, and follows same-day follow-up questions.
+          <span class="mono">/memory</span> shows what it holds; <span class="mono">/forget</span>
+          deletes it.</p>
+        </div>
+        <div class="form">
           <h3>Grows with your goals</h3>
           <p>Occasionally suggests something outside your usual pattern — but only when a
           stated goal clearly earns it.</p>
@@ -382,6 +403,8 @@
         <span class="cap">Config-owned profile</span>
         <span class="cap">Live /set knobs</span>
         <span class="cap">Gated Telegram bot</span>
+        <span class="cap">Coach memory</span>
+        <span class="cap">Timezone-aware briefings</span>
       </div>
     </section>
 
@@ -443,15 +466,15 @@
     <!-- ARCHITECTURE -->
     <section>
       <div class="sec-head"><span class="eyebrow">Architecture</span><h2>One core, two entry points</h2></div>
-      <p class="lede">The same gated logic runs the scheduled cron and the live bot, so neither
-      can accidentally skip the security gate.</p>
+      <p class="lede">The same gated logic runs the scheduled briefing and the live bot, so neither
+      can skip the security gate. Everything, including the model call and the coach's memory,
+      runs inside one AWS account.</p>
       <div class="route">
-<pre><span class="g">EventBridge (daily)</span>  ─►  ingest ─► reason ─► <span class="t">deliver → Telegram</span>
-<span class="h">Telegram webhook</span>     ─►  bot/core <span class="m">(chat-ID gated)</span> ─► /brief · /set · Q&amp;A
-
-<span class="m">secrets</span>  AWS Secrets Manager — Garmin creds · LLM key · bot token
+        <div class="arch"><svg viewBox="0 0 760 466" role="img" aria-label="hakigains on AWS: EventBridge and a Telegram webhook both run one Lambda, which reads Garmin, searches AgentCore Memory, asks Claude on Bedrock, replies on Telegram and saves the exchange back to memory"><defs><marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker><marker id="ar-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahm"/></marker></defs><rect x="16" y="44" width="150" height="52" rx="6" class="bx"/><text x="91.0" y="67.0" text-anchor="middle">EventBridge</text><text x="91.0" y="83.0" text-anchor="middle" class="s">07:00 daily</text><rect x="16" y="156" width="150" height="52" rx="6" class="bx"/><text x="91.0" y="179.0" text-anchor="middle">Telegram webhook</text><text x="91.0" y="195.0" text-anchor="middle" class="s">Lambda Function URL</text><line x1="166" y1="70" x2="234" y2="70" class="ar" marker-end="url(#ar-a)"/><text x="200" y="62" text-anchor="middle" class="l">briefing</text><line x1="166" y1="182" x2="234" y2="182" class="ar" marker-end="url(#ar-a)"/><text x="200" y="174" text-anchor="middle" class="l">message</text><rect x="236" y="24" width="230" height="196" rx="8" class="core"/><text x="252" y="47" class="k">LAMBDA · CHAT-ID GATED CORE</text><text x="252" y="74"><tspan class="num">1</tspan><tspan dx="10">Pull today&#39;s Garmin data</tspan></text><text x="252" y="102" class="tm"><tspan class="num">2</tspan><tspan dx="10">Recall memory, build prompt</tspan></text><text x="252" y="130"><tspan class="num">3</tspan><tspan dx="10">Ask Claude</tspan></text><text x="252" y="158"><tspan class="num">4</tspan><tspan dx="10">Send the reply</tspan></text><text x="252" y="186" class="tm"><tspan class="num">5</tspan><tspan dx="10">Save the exchange</tspan></text><rect x="560" y="48" width="184" height="44" rx="6" class="bx"/><text x="652.0" y="74.0" text-anchor="middle">Garmin Connect</text><rect x="560" y="104" width="184" height="44" rx="6" class="bx"/><text x="652.0" y="123.0" text-anchor="middle">Claude Sonnet 5.5</text><text x="652.0" y="139.0" text-anchor="middle" class="s">Amazon Bedrock</text><rect x="560" y="160" width="184" height="44" rx="6" class="bx"/><text x="652.0" y="186.0" text-anchor="middle">Telegram</text><line x1="466" y1="70" x2="558" y2="70" class="ar" marker-end="url(#ar-a)"/><text x="512" y="62" text-anchor="middle" class="l">read data</text><line x1="466" y1="126" x2="558" y2="126" class="ar" marker-end="url(#ar-a)"/><text x="512" y="118" text-anchor="middle" class="l">prompt, reply</text><line x1="466" y1="182" x2="558" y2="182" class="ar" marker-end="url(#ar-a)"/><text x="512" y="174" text-anchor="middle" class="l">send</text><rect x="16" y="300" width="150" height="52" rx="6" class="bx"/><text x="91.0" y="323.0" text-anchor="middle">Secrets Manager</text><text x="91.0" y="339.0" text-anchor="middle" class="s">Garmin, Telegram keys</text><polyline points="250,220 250,236 91,236 91,298" class="ar" marker-end="url(#ar-a)"/><text x="99" y="270" class="l">keys</text><rect x="186" y="300" width="170" height="52" rx="6" class="bx"/><text x="271.0" y="323.0" text-anchor="middle">S3 state bucket</text><text x="271.0" y="339.0" text-anchor="middle" class="s">Garmin token, settings</text><line x1="271" y1="222" x2="271" y2="298" class="ar" marker-start="url(#ar-a)" marker-end="url(#ar-a)"/><text x="263" y="270" text-anchor="end" class="l">load, save</text><rect x="390" y="300" width="354" height="150" rx="6" class="mem"/><text x="406" y="322" class="km">BEDROCK AGENTCORE MEMORY</text><rect x="404" y="340" width="140" height="62" rx="5" class="in"/><text x="474" y="366" text-anchor="middle">Facts</text><text x="474" y="384" text-anchor="middle" class="s">dated, searchable</text><rect x="606" y="340" width="124" height="62" rx="5" class="in"/><text x="668" y="366" text-anchor="middle">Events</text><text x="668" y="384" text-anchor="middle" class="s">chat turns, briefings</text><line x1="606" y1="371" x2="546" y2="371" class="arm" marker-end="url(#ar-m)"/><text x="575" y="362" text-anchor="middle" class="lm">extract</text><text x="406" y="424" class="s">AWS extracts facts from chat turns in the background.</text><text x="406" y="440" class="s">Briefings are kept for follow-ups but not mined for facts.</text><line x1="410" y1="338" x2="410" y2="222" class="arm" marker-end="url(#ar-m)"/><text x="402" y="264" text-anchor="end" class="lm">search</text><polyline points="450,220 450,250 668,250 668,338" class="arm" marker-end="url(#ar-m)"/><text x="560" y="243" text-anchor="middle" class="lm">write each turn</text></svg></div>
+<pre><span class="m">secrets</span>  AWS Secrets Manager — Garmin creds · bot token (no LLM key to hold)
 <span class="m">state</span>    S3 — Garmin auth token + settings, synced across cold starts
-<span class="m">brain</span>    LLM behind a provider interface — Azure OpenAI today, Bedrock/Claude next
+<span class="m">brain</span>    Claude Sonnet 5.5 on Amazon Bedrock, behind a provider interface
+<span class="m">memory</span>   Bedrock AgentCore Memory — chat turns in, dated facts out
 <span class="m">deploy</span>   AWS SAM · container-image Lambda · ap-southeast-1</pre>
       </div>
     </section>
@@ -468,13 +491,14 @@
           <div class="status-item"><span class="mk">✓</span><span>Gated interactive Telegram bot</span></div>
           <div class="status-item"><span class="mk">✓</span><span>Config-owned profile + live-tunable knobs</span></div>
           <div class="status-item"><span class="mk">✓</span><span>Deployed serverless on AWS (Lambda + EventBridge)</span></div>
+          <div class="status-item"><span class="mk">✓</span><span>Claude on Amazon Bedrock, in your own AWS account</span></div>
+          <div class="status-item"><span class="mk">✓</span><span>Coach memory on Bedrock AgentCore Memory</span></div>
         </div>
         <div class="status-col next">
           <h3>Uncharted</h3>
           <div class="status-item"><span class="mk">○</span><span>Calendar as a hard constraint (today: soft profile notes only)</span></div>
-          <div class="status-item"><span class="mk">○</span><span>Feedback loop — planned vs. actual vs. how it felt</span></div>
+          <div class="status-item"><span class="mk">○</span><span>Feedback loop — planned vs. actual vs. how it felt (today: yesterday's recommendation feeds the next briefing)</span></div>
           <div class="status-item"><span class="mk">○</span><span>Map a recommendation to a real saved Garmin workout</span></div>
-          <div class="status-item"><span class="mk">○</span><span>Bedrock/Claude provider (closing the last data egress)</span></div>
         </div>
       </div>
     </section>
@@ -485,7 +509,8 @@
       <div class="crew">
         <span class="flag"><span class="fx">◈</span>Python 3.12</span>
         <span class="flag"><span class="fx">◈</span>garminconnect</span>
-        <span class="flag"><span class="fx">◈</span>Azure OpenAI → Bedrock</span>
+        <span class="flag"><span class="fx">◈</span>Claude Sonnet 5.5 · Amazon Bedrock</span>
+        <span class="flag"><span class="fx">◈</span>Bedrock AgentCore Memory</span>
         <span class="flag"><span class="fx">◈</span>Telegram Bot API</span>
         <span class="flag"><span class="fx">◈</span>AWS Lambda + EventBridge</span>
         <span class="flag"><span class="fx">◈</span>Secrets Manager · S3</span>

@@ -118,6 +118,7 @@ treat as medical-record sensitive.
    Config:  profile (config.yaml, file) + knobs (data/settings.json, via /set)
    Secrets: Garmin creds, LLM key, Telegram token — never in the repo
    LLM:     provider abstraction — Claude on Bedrock (own AWS account)
+   Memory:  optional — Bedrock AgentCore Memory (chat turns in, dated facts out)
 ```
 
 **Package (`src/hakigains/`):** `config` · `garmin_client` · `ingest` · `reason` · `deliver` ·
@@ -126,7 +127,7 @@ long-poll listener and the Lambda webhook — so neither can skip the gate.
 
 ## 8. Runtime & hosting
 
-**Runtime:** Python 3.12; `garminconnect`, `openai`, `requests`, `PyYAML`. Tiny compute footprint.
+**Runtime:** Python 3.12; `garminconnect`, `anthropic[bedrock]`, `boto3`, `requests`, `PyYAML`. Tiny compute footprint.
 
 - **Local** — `pip install -e .`, run `scripts/run_briefing.py` (cron/Task Scheduler) and
   `scripts/run_listener.py` (always-on long-poll bot). Data never leaves your machine (except the

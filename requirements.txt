@@ -1,5 +1,7 @@
 garminconnect
 python-dotenv
 anthropic[bedrock]
+boto3>=1.43.105
 requests
 PyYAML
+tzdata

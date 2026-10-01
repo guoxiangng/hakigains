@@ -51,7 +51,18 @@ the same way, so knob changes persist across cold starts.
 - 2× Lambda (image): `ScheduledBriefingFunction` (EventBridge schedule, default 07:00 SGT)
   and `WebhookFunction` (Function URL, `AuthType: NONE` — the chat-ID gate is the guard).
 - `StateBucket` (S3, all public access blocked) for the Garmin token + settings.
-- IAM scoped to: read the one secret, read/write the state bucket, invoke Claude on Bedrock.
+- `CoachMemory` (AgentCore Memory) for what the coach remembers.
+- IAM scoped to: read the one secret, read/write the state bucket, invoke Claude on Bedrock,
+  read/write that one memory.
+
+## Coach memory: AgentCore Memory
+The template creates one **Amazon Bedrock AgentCore Memory** (`CoachMemory`). Each chat exchange
+is stored as an event; AgentCore extracts dated facts from them in the background ("left knee
+sore", "physio on Tuesday evenings"), and the coach searches those before every briefing and
+reply. Briefings are stored for same-day follow-ups but are not mined for facts. In the bot,
+`/memory` lists what is held and `/forget <number>` deletes one item. Raw chat turns expire
+after 90 days; extracted facts stay until you delete them. Memory is optional in the code: with
+`HAKIGAINS_MEMORY_ID` unset (the local default) the coach runs without it.
 
 ## LLM: Claude on Bedrock
 The coaching call goes to **Claude on Amazon Bedrock in this account** (`llm/bedrock.py`), so

@@ -10,6 +10,8 @@ from collections import Counter
 from datetime import date, timedelta
 from typing import Any
 
+from hakigains.config import today
+
 # Garmin's typeKey is already a categorisation, but it splits indoor/outdoor
 # variants (running vs treadmill_running, cycling vs indoor_cycling). We roll
 # those into coarse MODALITY buckets so the coach reasons over "run"/"bike"/etc.
@@ -201,7 +203,7 @@ def build_summary(
     trend_days: int = 7,
 ) -> dict:
     """Pull one day + recent activities and return a compact readiness summary."""
-    d = target_date or date.today().isoformat()
+    d = target_date or today()
 
     stats = client.get_stats(d) or {}
     sleep = client.get_sleep_data(d) or {}

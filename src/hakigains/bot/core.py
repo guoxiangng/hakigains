@@ -1,12 +1,12 @@
 """Shared bot routing — used by BOTH the local long-poll listener and the Lambda
 webhook. The chat-ID gate lives here so neither entry point can forget it.
 """
-from datetime import date
-
-from hakigains.config import Config, load_config, set_setting
+from hakigains.briefing import briefing_context, save_briefing
+from hakigains.config import Config, load_config, set_setting, today as today_iso
 from hakigains.deliver.telegram import send_message
 from hakigains.ingest.readiness import build_summary
-from hakigains.reason.coach import answer, recommend
+from hakigains.memory.factory import get_memory
+from hakigains.reason.coach import answer, build_memory_context, recommend
 
 # Cache the day's readiness (keyed by date + windows) to avoid re-hitting Garmin
 # on every message.
@@ -17,6 +17,8 @@ HELP = (
     "/brief — today's recommended session\n"
     "/settings — show your current knobs\n"
     "/set <knob> <value> — e.g. /set intensity_bias aggressive\n"
+    "/memory — what I remember about you\n"
+    "/forget <number> — delete one of those memories\n"
     "…or just ask me anything about your training/recovery."
 )
 
@@ -39,7 +41,8 @@ def handle(text: str, client, llm, config: Config) -> tuple[str, str | None]:
     """Route one message. Returns (reply, parse_mode)."""
     text = (text or "").strip()
     low = text.lower()
-    today = date.today().isoformat()
+    today = today_iso()
+    memory = get_memory()
 
     if low in ("/ping", "ping"):
         return "pong — haki online.", None
@@ -53,12 +56,50 @@ def handle(text: str, client, llm, config: Config) -> tuple[str, str | None]:
         if len(parts) != 3:
             return "Usage: /set <knob> <value>  (knobs: " + ", ".join(KNOBS) + ")", None
         return set_setting(parts[1], parts[2]), None
+    if low in ("/memory", "memory"):
+        return _show_memory(memory), None
+    if low.startswith("/forget"):
+        return _forget(memory, text), None
     if low in ("/brief", "brief"):
-        brief = recommend(_summary(client, config, today), llm, config)
+        brief = recommend(
+            _summary(client, config, today), llm, config, briefing_context(today)
+        )
+        save_briefing(today, brief)
         return f"🏴‍☠️ *HAKIGAINS — {today}*\n\n{brief}", "Markdown"
 
-    # Anything else: a coaching question grounded in today's data.
-    return answer(text, _summary(client, config, today), llm, config), None
+    # Anything else: a coaching question grounded in today's data + memory.
+    context = ""
+    if memory.enabled:
+        context = build_memory_context(
+            records=memory.recall(text), turns=memory.turns(today)
+        )
+    reply = answer(text, _summary(client, config, today), llm, config, context)
+    memory.save_turns(today, [("USER", text), ("ASSISTANT", reply)])
+    return reply, None
+
+
+def _show_memory(memory) -> str:
+    if not memory.enabled:
+        return "Memory is off (HAKIGAINS_MEMORY_ID is not set)."
+    records = memory.records()
+    if not records:
+        return "Nothing remembered yet. Tell me things as we chat and I'll keep them."
+    lines = ["What I remember about you:"]
+    lines += [f"{i}. ({r.noted}) {r.text}" for i, r in enumerate(records, 1)]
+    lines.append("\n/forget <number> removes one.")
+    return "\n".join(lines)
+
+
+def _forget(memory, text: str) -> str:
+    if not memory.enabled:
+        return "Memory is off (HAKIGAINS_MEMORY_ID is not set)."
+    parts = text.split()
+    records = memory.records()
+    if len(parts) != 2 or not parts[1].isdigit() or not 1 <= int(parts[1]) <= len(records):
+        return "Usage: /forget <number>  (see the numbers in /memory)"
+    record = records[int(parts[1]) - 1]
+    memory.forget(record)
+    return f"Forgotten: {record.text}"
 
 
 def process_update(update: dict, client, llm, allowed_chat_id: int) -> None:

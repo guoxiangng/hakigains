@@ -6,7 +6,7 @@ so the same code serves any self-hoster without editing this module.
 import json
 from datetime import date
 
-from hakigains.config import Config
+from hakigains.config import Config, today
 from hakigains.llm.base import LLMProvider
 
 INTENSITY_GUIDANCE = {
@@ -118,7 +118,7 @@ def build_answer_prompt(config: Config) -> str:
 
 
 def build_user_message(summary: dict) -> str:
-    d = summary.get("date", date.today().isoformat())
+    d = summary.get("date", today())
     weekday = date.fromisoformat(d).strftime("%A")
     return (
         f"Today is {weekday}, {d}.\n"
@@ -127,19 +127,52 @@ def build_user_message(summary: dict) -> str:
     )
 
 
-def recommend(summary: dict, llm: LLMProvider, config: Config) -> str:
-    resp = llm.complete(
-        system=build_system_prompt(config), user=build_user_message(summary)
-    )
+MEMORY_HEADER = (
+    "What you remember about this athlete, from earlier conversations. Each item is "
+    "dated; treat old or time-limited items (e.g. \"this week\") as possibly expired, "
+    "and let today's data win where they conflict:"
+)
+
+
+def build_memory_context(
+    records: list | None = None,
+    yesterday_brief: str | None = None,
+    turns: list | None = None,
+) -> str:
+    """Render memory into a prompt block. Empty string when there is nothing."""
+    parts = []
+    if records:
+        lines = [f"- ({r.noted}) {r.text}" for r in records if r.text]
+        if lines:
+            parts.append(MEMORY_HEADER + "\n" + "\n".join(lines))
+    if yesterday_brief:
+        parts.append(
+            "Yesterday you recommended the session below. Check the recent activity "
+            "list to see whether it was done, and factor that in:\n" + yesterday_brief
+        )
+    if turns:
+        lines = [f"{'Athlete' if role == 'USER' else 'You'}: {text}" for role, text in turns]
+        parts.append("Earlier today in this chat:\n" + "\n".join(lines))
+    return "\n\n".join(parts)
+
+
+def recommend(summary: dict, llm: LLMProvider, config: Config, context: str = "") -> str:
+    user = build_user_message(summary)
+    if context:
+        user += f"\n\n{context}"
+    resp = llm.complete(system=build_system_prompt(config), user=user)
     return resp.text.strip()
 
 
-def answer(question: str, summary: dict, llm: LLMProvider, config: Config) -> str:
+def answer(
+    question: str, summary: dict, llm: LLMProvider, config: Config, context: str = ""
+) -> str:
     """Free-form Q&A grounded in today's readiness summary."""
     user = (
         f"Today's readiness + recent-training summary:\n"
         f"{json.dumps(summary, indent=2, default=str)}\n\n"
-        f"Question: {question}"
+        + (f"{context}\n\n" if context else "")
+        + f"Question: {question}"
     )
     resp = llm.complete(system=build_answer_prompt(config), user=user)
     return resp.text.strip()

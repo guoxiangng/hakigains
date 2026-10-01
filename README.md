@@ -31,6 +31,7 @@ cp config.example.yaml config.yaml    # your profile + default knobs
 - **Telegram bot:** create one via @BotFather (`/newbot`), put the token in `.env`, then
   message your new bot once and run `python scripts/telegram_setup.py` to capture your chat ID.
 - **LLM:** Claude on Amazon Bedrock by default (uses your AWS credentials; see `.env.example` for model overrides).
+- **Memory (optional):** set `HAKIGAINS_MEMORY_ID` to a Bedrock AgentCore Memory and the coach keeps dated facts from what you tell it (`/memory`, `/forget`). The SAM deploy creates one for you; unset, the coach runs without memory.
 
 ### 3. Run
 ```bash

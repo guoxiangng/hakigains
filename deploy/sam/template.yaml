@@ -21,6 +21,10 @@ Parameters:
     Type: String
     Default: global.anthropic.claude-opus-4-8
     Description: Retried once if the primary model refuses.
+  Timezone:
+    Type: String
+    Default: Asia/Singapore
+    Description: The athlete's timezone — decides which date counts as "today" (Lambda itself runs in UTC).
 
 Globals:
   Function:
@@ -37,6 +41,8 @@ Globals:
         LLM_PROVIDER: bedrock
         BEDROCK_MODEL_ID: !Ref BedrockModelId
         BEDROCK_FALLBACK_MODEL_ID: !Ref BedrockFallbackModelId
+        HAKIGAINS_TZ: !Ref Timezone
+        HAKIGAINS_MEMORY_ID: !GetAtt CoachMemory.MemoryId
 
 Resources:
   StateBucket:
@@ -47,6 +53,20 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+
+  # Coach memory: chat turns are stored as events; AgentCore extracts dated facts
+  # from them in the background, and the coach searches those before each reply.
+  CoachMemory:
+    Type: AWS::BedrockAgentCore::Memory
+    Properties:
+      Name: hakigains
+      Description: hakigains coach memory - chat turns plus facts extracted from them.
+      EventExpiryDuration: 90     # days raw chat turns are kept; extracted facts persist
+      MemoryStrategies:
+        - SemanticMemoryStrategy:
+            Name: Facts
+            NamespaceTemplates:
+              - "/athlete/{actorId}/facts/"
 
   ScheduledBriefingFunction:
     Type: AWS::Serverless::Function
@@ -69,6 +89,14 @@ Resources:
                 - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/global.anthropic.claude-*"
                 - "arn:aws:bedrock:*::foundation-model/anthropic.claude-*"
                 - "arn:aws:bedrock:::foundation-model/anthropic.claude-*"
+            - Effect: Allow
+              Action:
+                - bedrock-agentcore:CreateEvent
+                - bedrock-agentcore:ListEvents
+                - bedrock-agentcore:RetrieveMemoryRecords
+                - bedrock-agentcore:ListMemoryRecords
+                - bedrock-agentcore:DeleteMemoryRecord
+              Resource: !GetAtt CoachMemory.MemoryArn
       Events:
         Daily:
           Type: Schedule
@@ -98,6 +126,14 @@ Resources:
                 - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/global.anthropic.claude-*"
                 - "arn:aws:bedrock:*::foundation-model/anthropic.claude-*"
                 - "arn:aws:bedrock:::foundation-model/anthropic.claude-*"
+            - Effect: Allow
+              Action:
+                - bedrock-agentcore:CreateEvent
+                - bedrock-agentcore:ListEvents
+                - bedrock-agentcore:RetrieveMemoryRecords
+                - bedrock-agentcore:ListMemoryRecords
+                - bedrock-agentcore:DeleteMemoryRecord
+              Resource: !GetAtt CoachMemory.MemoryArn
 
 Outputs:
   WebhookUrl:
@@ -105,3 +141,6 @@ Outputs:
     Value: !GetAtt WebhookFunctionUrl.FunctionUrl
   StateBucketName:
     Value: !Ref StateBucket
+  CoachMemoryId:
+    Description: AgentCore Memory id (set as HAKIGAINS_MEMORY_ID to use it from a local run).
+    Value: !GetAtt CoachMemory.MemoryId
